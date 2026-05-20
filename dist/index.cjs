@@ -1,8 +1,8 @@
 'use strict';
 
 require('chalk');
-require('./index-XsQ_giow.cjs');
-require('./registerKillSessionHandler-B6NlxcWn.cjs');
+require('./index-moo6ovoj.cjs');
+require('./registerKillSessionHandler-BTdkrn-f.cjs');
 require('zod');
 require('node:child_process');
 require('node:os');

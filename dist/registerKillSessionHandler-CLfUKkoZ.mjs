@@ -1566,46 +1566,61 @@ class ApiSessionClient extends EventEmitter {
    * Wait for socket buffer to flush
    */
   async flush() {
-    if (!this.socket.connected) {
-      return;
+    while (this._pendingOutbox.length > 0) {
+      const batch = this._pendingOutbox.splice(0, ApiSessionClient.MAX_BATCH_SIZE);
+      try {
+        await axios.post(
+          `${configuration.serverUrl}/v3/sessions/${encodeURIComponent(this.sessionId)}/messages`,
+          { messages: batch.map((m) => ({ content: m.encrypted, localId: m.localId })) },
+          {
+            headers: { Authorization: `Bearer ${this.token}` },
+            timeout: 3e4
+          }
+        );
+      } catch {
+        this._pendingOutbox.unshift(...batch);
+        break;
+      }
     }
-    return new Promise((resolve) => {
-      this.socket.emit("ping", () => {
-        resolve();
+    if (this.socket.connected) {
+      return new Promise((resolve) => {
+        this.socket.emit("ping", () => resolve());
+        setTimeout(() => resolve(), 5e3);
       });
-      setTimeout(() => {
-        resolve();
-      }, 1e4);
-    });
+    }
   }
   /**
    * Send a session protocol envelope to the server (cursor-agent support).
    * Wraps the envelope in the format expected by the App and emits via WebSocket.
    */
+  _pendingOutbox = [];
+  static MAX_BATCH_SIZE = 20;
+  _enqueue(encrypted, localId) {
+    this._pendingOutbox.push({ localId: localId ?? "", encrypted });
+  }
   sendSessionProtocolMessage(envelope) {
     console.error(`[API] sendSessionProtocolMessage ev.t=${envelope.ev?.t} connected=${this.socket.connected}`);
-    if (!this.socket.connected) {
-      logger.debug("[API] Socket not connected, session protocol message lost");
-      return;
-    }
     const content = {
       role: "session",
       content: envelope,
       meta: { sentFrom: "cli" }
     };
     const encrypted = encodeBase64(encrypt(this.encryptionKey, this.encryptionVariant, content));
-    this.socket.emit("message", {
-      sid: this.sessionId,
-      message: encrypted
-    });
+    this._enqueue(encrypted, envelope.id || "");
   }
   /**
    * Send a turn-end / turn-start lifecycle envelope.
    * Same shape as sendSessionProtocolMessage so the App's timer stops correctly.
    */
   sendSessionLifecycleEnvelope(envelope) {
-    console.error(`[API] sendSessionLifecycleEnvelope ev.t=${envelope.ev?.t} connected=${this.socket.connected}`);
-    this.sendSessionProtocolMessage(envelope);
+    console.error(`[API] sendSessionLifecycleEnvelope ev.t=${envelope.ev?.t}`);
+    const content = {
+      role: "session",
+      content: { type: "session", data: envelope },
+      meta: { sentFrom: "cli" }
+    };
+    const encrypted = encodeBase64(encrypt(this.encryptionKey, this.encryptionVariant, content));
+    this._enqueue(encrypted, envelope.id || "");
   }
   async close() {
     logger.debug("[API] socket.close() called");

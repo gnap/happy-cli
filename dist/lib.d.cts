@@ -716,6 +716,9 @@ declare class ApiSessionClient extends EventEmitter {
      * Send a session protocol envelope to the server (cursor-agent support).
      * Wraps the envelope in the format expected by the App and emits via WebSocket.
      */
+    private _pendingOutbox;
+    private static MAX_BATCH_SIZE;
+    private _enqueue;
     sendSessionProtocolMessage(envelope: {
         id?: string;
         role: string;

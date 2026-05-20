@@ -1,7 +1,7 @@
 'use strict';
 
-var api = require('./registerKillSessionHandler-B6NlxcWn.cjs');
-var setupOfflineReconnection = require('./setupOfflineReconnection-CxQJbCXo.cjs');
+var api = require('./registerKillSessionHandler-BTdkrn-f.cjs');
+var setupOfflineReconnection = require('./setupOfflineReconnection-DcTmawsM.cjs');
 require('zod');
 require('fs/promises');
 require('os');

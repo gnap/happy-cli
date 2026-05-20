@@ -10,6 +10,7 @@ import { randomUUID } from 'node:crypto';
 import { AsyncLock } from '@/utils/lock';
 import { RpcHandlerManager } from './rpc/RpcHandlerManager';
 import { registerCommonHandlers } from '../modules/common/registerCommonHandlers';
+import axios from 'axios';
 
 /**
  * ACP (Agent Communication Protocol) message data types.
@@ -476,39 +477,53 @@ export class ApiSessionClient extends EventEmitter {
      * Wait for socket buffer to flush
      */
     async flush(): Promise<void> {
-        if (!this.socket.connected) {
-            return;
+        // Flush pending outbox via HTTP (matches happy reference)
+        while (this._pendingOutbox.length > 0) {
+            const batch = this._pendingOutbox.splice(0, ApiSessionClient.MAX_BATCH_SIZE);
+            try {
+                await axios.post(
+                    `${configuration.serverUrl}/v3/sessions/${encodeURIComponent(this.sessionId)}/messages`,
+                    { messages: batch.map(m => ({ content: m.encrypted, localId: m.localId })) },
+                    {
+                        headers: { Authorization: `Bearer ${this.token}` },
+                        timeout: 30000,
+                    },
+                );
+            } catch {
+                // Re-queue on failure for next flush
+                this._pendingOutbox.unshift(...batch);
+                break;
+            }
         }
-        return new Promise((resolve) => {
-            this.socket.emit('ping', () => {
-                resolve();
+        // Also wait for socket ack
+        if (this.socket.connected) {
+            return new Promise((resolve) => {
+                this.socket.emit('ping', () => resolve());
+                setTimeout(() => resolve(), 5000);
             });
-            setTimeout(() => {
-                resolve();
-            }, 10000);
-        });
+        }
     }
 
     /**
      * Send a session protocol envelope to the server (cursor-agent support).
      * Wraps the envelope in the format expected by the App and emits via WebSocket.
      */
+    private _pendingOutbox: Array<{ localId: string; encrypted: string }> = [];
+    private static MAX_BATCH_SIZE = 20;
+
+    private _enqueue(encrypted: string, localId: string): void {
+        this._pendingOutbox.push({ localId: localId ?? '', encrypted });
+    }
+
     sendSessionProtocolMessage(envelope: { id?: string; role: string; ev: Record<string, unknown>; meta?: Record<string, unknown> }): void {
         console.error(`[API] sendSessionProtocolMessage ev.t=${(envelope.ev as any)?.t} connected=${this.socket.connected}`);
-        if (!this.socket.connected) {
-            logger.debug('[API] Socket not connected, session protocol message lost');
-            return;
-        }
         const content = {
             role: 'session',
             content: envelope,
             meta: { sentFrom: 'cli' },
         };
         const encrypted = encodeBase64(encrypt(this.encryptionKey, this.encryptionVariant, content));
-        this.socket.emit('message', {
-            sid: this.sessionId,
-            message: encrypted,
-        });
+        this._enqueue(encrypted, envelope.id || '');
     }
 
     /**
@@ -516,8 +531,14 @@ export class ApiSessionClient extends EventEmitter {
      * Same shape as sendSessionProtocolMessage so the App's timer stops correctly.
      */
     sendSessionLifecycleEnvelope(envelope: { id?: string; role: string; ev: Record<string, unknown>; meta?: Record<string, unknown> }): void {
-        console.error(`[API] sendSessionLifecycleEnvelope ev.t=${(envelope.ev as any)?.t} connected=${this.socket.connected}`);
-        this.sendSessionProtocolMessage(envelope);
+        console.error(`[API] sendSessionLifecycleEnvelope ev.t=${(envelope.ev as any)?.t}`);
+        const content = {
+            role: 'session',
+            content: { type: 'session', data: envelope },
+            meta: { sentFrom: 'cli' },
+        };
+        const encrypted = encodeBase64(encrypt(this.encryptionKey, this.encryptionVariant, content));
+        this._enqueue(encrypted, envelope.id || '');
     }
 
     async close() {
