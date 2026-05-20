@@ -515,6 +515,7 @@ export class ApiSessionClient extends EventEmitter {
      * Same shape as sendSessionProtocolMessage so the App's timer stops correctly.
      */
     sendSessionLifecycleEnvelope(envelope: { id?: string; role: string; ev: Record<string, unknown>; meta?: Record<string, unknown> }): void {
+        logger.debug(`[API] sendSessionLifecycleEnvelope ev.t=${(envelope.ev as any)?.t} sessionId=${this.sessionId}`);
         this.sendSessionProtocolMessage(envelope);
     }
 
