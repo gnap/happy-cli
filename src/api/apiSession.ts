@@ -478,6 +478,9 @@ export class ApiSessionClient extends EventEmitter {
      */
     async flush(): Promise<void> {
         // Flush pending outbox via HTTP (matches happy reference)
+        if (this._pendingOutbox.length > 0) {
+            console.error(`[API] flushOutbox: ${this._pendingOutbox.length} messages`);
+        }
         while (this._pendingOutbox.length > 0) {
             const batch = this._pendingOutbox.splice(0, ApiSessionClient.MAX_BATCH_SIZE);
             try {
@@ -489,7 +492,9 @@ export class ApiSessionClient extends EventEmitter {
                         timeout: 30000,
                     },
                 );
-            } catch {
+                console.error(`[API] flushOutbox: sent ${batch.length} ok`);
+            } catch(e: any) {
+                console.error(`[API] flushOutbox error: ${e?.message || e}`);
                 // Re-queue on failure for next flush
                 this._pendingOutbox.unshift(...batch);
                 break;

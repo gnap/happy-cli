@@ -863,7 +863,7 @@ class RpcHandlerManager {
   }
 }
 
-const __dirname$1 = path.dirname(url.fileURLToPath((typeof document === 'undefined' ? require('u' + 'rl').pathToFileURL(__filename).href : (_documentCurrentScript && _documentCurrentScript.tagName.toUpperCase() === 'SCRIPT' && _documentCurrentScript.src || new URL('registerKillSessionHandler-BTdkrn-f.cjs', document.baseURI).href))));
+const __dirname$1 = path.dirname(url.fileURLToPath((typeof document === 'undefined' ? require('u' + 'rl').pathToFileURL(__filename).href : (_documentCurrentScript && _documentCurrentScript.tagName.toUpperCase() === 'SCRIPT' && _documentCurrentScript.src || new URL('registerKillSessionHandler-DvMk4CwC.cjs', document.baseURI).href))));
 function projectPath() {
   const path$1 = path.resolve(__dirname$1, "..");
   return path$1;
@@ -1588,6 +1588,9 @@ class ApiSessionClient extends node_events.EventEmitter {
    * Wait for socket buffer to flush
    */
   async flush() {
+    if (this._pendingOutbox.length > 0) {
+      console.error(`[API] flushOutbox: ${this._pendingOutbox.length} messages`);
+    }
     while (this._pendingOutbox.length > 0) {
       const batch = this._pendingOutbox.splice(0, ApiSessionClient.MAX_BATCH_SIZE);
       try {
@@ -1599,7 +1602,9 @@ class ApiSessionClient extends node_events.EventEmitter {
             timeout: 3e4
           }
         );
-      } catch {
+        console.error(`[API] flushOutbox: sent ${batch.length} ok`);
+      } catch (e) {
+        console.error(`[API] flushOutbox error: ${e?.message || e}`);
         this._pendingOutbox.unshift(...batch);
         break;
       }

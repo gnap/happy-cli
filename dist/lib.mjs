@@ -1,5 +1,5 @@
-export { A as ApiClient, a as ApiSessionClient, M as MessageQueue2, R as RawJSONLinesSchema, c as configuration, f as connectionState, h as hashObject, i as initialMachineMetadata, l as logger, n as notifyDaemonSessionStarted, r as readCredentials, b as readSettings, d as registerKillSessionHandler, s as startHappyServer, e as stopCaffeinate } from './registerKillSessionHandler-CLfUKkoZ.mjs';
-export { c as createSessionMetadata, s as setupOfflineReconnection } from './setupOfflineReconnection-CY9vU8Yq.mjs';
+export { A as ApiClient, a as ApiSessionClient, M as MessageQueue2, R as RawJSONLinesSchema, c as configuration, f as connectionState, h as hashObject, i as initialMachineMetadata, l as logger, n as notifyDaemonSessionStarted, r as readCredentials, b as readSettings, d as registerKillSessionHandler, s as startHappyServer, e as stopCaffeinate } from './registerKillSessionHandler-C8ArcSFa.mjs';
+export { c as createSessionMetadata, s as setupOfflineReconnection } from './setupOfflineReconnection-CGlr8ZKP.mjs';
 import 'zod';
 import 'fs/promises';
 import 'os';
