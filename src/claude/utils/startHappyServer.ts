@@ -109,12 +109,13 @@ export async function startHappyServer(client: ApiSessionClient, options?: Start
                     return;
                 }
                 const message = {
+                    role: 'user' as const,
                     content: { text, type: 'text' as const },
                     meta: {
                         origin: 'a2a',
                         title: typeof body.title === 'string' ? body.title : undefined,
                     },
-                } as UserMessage;
+                } as unknown as UserMessage;
                 await options.onA2aMessage(message);
                 res.writeHead(200).end(JSON.stringify({ ok: true }));
                 return;
