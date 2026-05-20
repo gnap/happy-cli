@@ -10,9 +10,15 @@ import { AddressInfo } from "node:net";
 import { z } from "zod";
 import { logger } from "@/ui/logger";
 import { ApiSessionClient } from "@/api/apiSession";
+import type { UserMessage } from "@/api/types";
 import { randomUUID } from "node:crypto";
 
-export async function startHappyServer(client: ApiSessionClient) {
+export interface StartHappyServerOptions {
+    onA2aMessage?: (message: UserMessage) => Promise<void> | void;
+    useDaemonA2ARoute?: boolean;
+}
+
+export async function startHappyServer(client: ApiSessionClient, options?: StartHappyServerOptions) {
     // Handler that sends title updates via the client
     const handler = async (title: string) => {
         logger.debug('[happyMCP] Changing title to:', title);
@@ -84,6 +90,43 @@ export async function startHappyServer(client: ApiSessionClient) {
     //
 
     const server = createServer(async (req, res) => {
+        // ── A2A message inbox ──────────────────────────────────────────
+        if (req.method === 'POST' && req.url === '/a2a/message' && options?.onA2aMessage) {
+            try {
+                const chunks: Buffer[] = [];
+                for await (const chunk of req) {
+                    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+                }
+                const raw = Buffer.concat(chunks).toString('utf8').trim();
+                if (!raw) {
+                    res.writeHead(400).end(JSON.stringify({ error: 'Empty body' }));
+                    return;
+                }
+                const body = JSON.parse(raw) as Record<string, unknown>;
+                const text = typeof body.text === 'string' ? body.text.trim() : null;
+                if (!text) {
+                    res.writeHead(400).end(JSON.stringify({ error: 'Missing text' }));
+                    return;
+                }
+                const message = {
+                    content: { text, type: 'text' as const },
+                    meta: {
+                        origin: 'a2a',
+                        title: typeof body.title === 'string' ? body.title : undefined,
+                    },
+                } as UserMessage;
+                await options.onA2aMessage(message);
+                res.writeHead(200).end(JSON.stringify({ ok: true }));
+                return;
+            } catch (err) {
+                logger.debug('[happyMCP] A2A message error:', err);
+                if (!res.headersSent) {
+                    res.writeHead(500).end(JSON.stringify({ error: 'Internal error' }));
+                }
+                return;
+            }
+        }
+
         try {
             await transport.handleRequest(req, res);
         } catch (error) {
