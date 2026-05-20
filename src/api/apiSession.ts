@@ -458,7 +458,7 @@ export class ApiSessionClient extends EventEmitter {
      * Send a session protocol envelope to the server (cursor-agent support).
      * Wraps the envelope in the format expected by the App and emits via WebSocket.
      */
-    sendSessionProtocolMessage(envelope: import('@slopus/happy-wire').SessionEnvelope): void {
+    sendSessionProtocolMessage(envelope: { id?: string; role: string; ev: Record<string, unknown>; meta?: Record<string, unknown> }): void {
         if (!this.socket.connected) {
             logger.debug('[API] Socket not connected, session protocol message lost');
             return;
