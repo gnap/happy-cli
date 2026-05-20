@@ -3,7 +3,7 @@
 var chalk = require('chalk');
 var os = require('node:os');
 var node_crypto = require('node:crypto');
-var api = require('./registerKillSessionHandler-CUo99EyR.cjs');
+var api = require('./registerKillSessionHandler-BMLb3vho.cjs');
 var node_child_process = require('node:child_process');
 var node_path = require('node:path');
 var node_readline = require('node:readline');
@@ -1165,7 +1165,7 @@ class AbortError extends Error {
   }
 }
 
-const __filename$1 = node_url.fileURLToPath((typeof document === 'undefined' ? require('u' + 'rl').pathToFileURL(__filename).href : (_documentCurrentScript && _documentCurrentScript.tagName.toUpperCase() === 'SCRIPT' && _documentCurrentScript.src || new URL('index-h6Dd77e8.cjs', document.baseURI).href)));
+const __filename$1 = node_url.fileURLToPath((typeof document === 'undefined' ? require('u' + 'rl').pathToFileURL(__filename).href : (_documentCurrentScript && _documentCurrentScript.tagName.toUpperCase() === 'SCRIPT' && _documentCurrentScript.src || new URL('index-DtcW-jVu.cjs', document.baseURI).href)));
 const __dirname$1 = node_path.join(__filename$1, "..");
 function getGlobalClaudeVersion() {
   try {
@@ -4587,7 +4587,7 @@ function updateLocalGeminiCredentials(tokens) {
     return;
   } else if (subcommand === "codex") {
     try {
-      const { runCodex } = await Promise.resolve().then(function () { return require('./runCodex-CGAV8D64.cjs'); });
+      const { runCodex } = await Promise.resolve().then(function () { return require('./runCodex--2F_lwLo.cjs'); });
       let startedBy = void 0;
       for (let i = 1; i < args.length; i++) {
         if (args[i] === "--started-by") {
@@ -4680,9 +4680,9 @@ function updateLocalGeminiCredentials(tokens) {
     if (geminiSubcommand === "project" && args[2] === "set" && args[3]) {
       const projectId = args[3];
       try {
-        const { saveGoogleCloudProjectToConfig } = await Promise.resolve().then(function () { return require('./config-B9WmT2be.cjs'); });
-        const { readCredentials: readCredentials2 } = await Promise.resolve().then(function () { return require('./registerKillSessionHandler-CUo99EyR.cjs'); }).then(function (n) { return n.persistence; });
-        const { ApiClient: ApiClient2 } = await Promise.resolve().then(function () { return require('./registerKillSessionHandler-CUo99EyR.cjs'); }).then(function (n) { return n.api; });
+        const { saveGoogleCloudProjectToConfig } = await Promise.resolve().then(function () { return require('./config-DgTsYN7P.cjs'); });
+        const { readCredentials: readCredentials2 } = await Promise.resolve().then(function () { return require('./registerKillSessionHandler-BMLb3vho.cjs'); }).then(function (n) { return n.persistence; });
+        const { ApiClient: ApiClient2 } = await Promise.resolve().then(function () { return require('./registerKillSessionHandler-BMLb3vho.cjs'); }).then(function (n) { return n.api; });
         let userEmail = void 0;
         try {
           const credentials = await readCredentials2();
@@ -4713,7 +4713,7 @@ function updateLocalGeminiCredentials(tokens) {
     }
     if (geminiSubcommand === "project" && args[2] === "get") {
       try {
-        const { readGeminiLocalConfig } = await Promise.resolve().then(function () { return require('./config-B9WmT2be.cjs'); });
+        const { readGeminiLocalConfig } = await Promise.resolve().then(function () { return require('./config-DgTsYN7P.cjs'); });
         const config = readGeminiLocalConfig();
         if (config.googleCloudProject) {
           console.log(`Current Google Cloud Project: ${config.googleCloudProject}`);
@@ -4753,7 +4753,7 @@ function updateLocalGeminiCredentials(tokens) {
       process.exit(0);
     }
     try {
-      const { runGemini } = await Promise.resolve().then(function () { return require('./runGemini-WS0NIEv-.cjs'); });
+      const { runGemini } = await Promise.resolve().then(function () { return require('./runGemini-CyM3Xni2.cjs'); });
       let startedBy = void 0;
       for (let i = 1; i < args.length; i++) {
         if (args[i] === "--started-by") {

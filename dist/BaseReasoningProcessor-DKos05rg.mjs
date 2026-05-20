@@ -1,4 +1,4 @@
-import { l as logger } from './registerKillSessionHandler-Cr3QfBgd.mjs';
+import { l as logger } from './registerKillSessionHandler-1h_alnSQ.mjs';
 import { randomUUID } from 'node:crypto';
 
 class BasePermissionHandler {

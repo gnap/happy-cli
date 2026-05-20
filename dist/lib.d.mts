@@ -904,11 +904,11 @@ declare const AIBackendProfileSchema: z.ZodObject<{
         name: z.ZodString;
         value: z.ZodString;
     }, "strip", z.ZodTypeAny, {
-        name: string;
         value: string;
+        name: string;
     }, {
-        name: string;
         value: string;
+        name: string;
     }>, "many">>;
     defaultSessionType: z.ZodOptional<z.ZodEnum<["simple", "worktree"]>>;
     defaultPermissionMode: z.ZodOptional<z.ZodEnum<["default", "acceptEdits", "bypassPermissions", "plan", "read-only", "safe-yolo", "yolo"]>>;
@@ -934,8 +934,8 @@ declare const AIBackendProfileSchema: z.ZodObject<{
     id: string;
     name: string;
     environmentVariables: {
-        name: string;
         value: string;
+        name: string;
     }[];
     compatibility: {
         claude: boolean;
@@ -1005,8 +1005,8 @@ declare const AIBackendProfileSchema: z.ZodObject<{
         updateEnvironment?: boolean | undefined;
     } | undefined;
     environmentVariables?: {
-        name: string;
         value: string;
+        name: string;
     }[] | undefined;
     defaultSessionType?: "simple" | "worktree" | undefined;
     defaultPermissionMode?: "default" | "acceptEdits" | "bypassPermissions" | "plan" | "read-only" | "safe-yolo" | "yolo" | undefined;

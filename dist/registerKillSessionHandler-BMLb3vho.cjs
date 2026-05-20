@@ -863,7 +863,7 @@ class RpcHandlerManager {
   }
 }
 
-const __dirname$1 = path.dirname(url.fileURLToPath((typeof document === 'undefined' ? require('u' + 'rl').pathToFileURL(__filename).href : (_documentCurrentScript && _documentCurrentScript.tagName.toUpperCase() === 'SCRIPT' && _documentCurrentScript.src || new URL('registerKillSessionHandler-CUo99EyR.cjs', document.baseURI).href))));
+const __dirname$1 = path.dirname(url.fileURLToPath((typeof document === 'undefined' ? require('u' + 'rl').pathToFileURL(__filename).href : (_documentCurrentScript && _documentCurrentScript.tagName.toUpperCase() === 'SCRIPT' && _documentCurrentScript.src || new URL('registerKillSessionHandler-BMLb3vho.cjs', document.baseURI).href))));
 function projectPath() {
   const path$1 = path.resolve(__dirname$1, "..");
   return path$1;
@@ -1605,6 +1605,7 @@ class ApiSessionClient extends node_events.EventEmitter {
    * Wraps the envelope in the format expected by the App and emits via WebSocket.
    */
   sendSessionProtocolMessage(envelope) {
+    console.error(`[API] sendSessionProtocolMessage ev.t=${envelope.ev?.t} connected=${this.socket.connected}`);
     if (!this.socket.connected) {
       logger.debug("[API] Socket not connected, session protocol message lost");
       return;
@@ -1625,7 +1626,7 @@ class ApiSessionClient extends node_events.EventEmitter {
    * Same shape as sendSessionProtocolMessage so the App's timer stops correctly.
    */
   sendSessionLifecycleEnvelope(envelope) {
-    logger.debug(`[API] sendSessionLifecycleEnvelope ev.t=${envelope.ev?.t} sessionId=${this.sessionId}`);
+    console.error(`[API] sendSessionLifecycleEnvelope ev.t=${envelope.ev?.t} connected=${this.socket.connected}`);
     this.sendSessionProtocolMessage(envelope);
   }
   async close() {

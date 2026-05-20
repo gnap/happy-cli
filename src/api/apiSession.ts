@@ -494,6 +494,7 @@ export class ApiSessionClient extends EventEmitter {
      * Wraps the envelope in the format expected by the App and emits via WebSocket.
      */
     sendSessionProtocolMessage(envelope: { id?: string; role: string; ev: Record<string, unknown>; meta?: Record<string, unknown> }): void {
+        console.error(`[API] sendSessionProtocolMessage ev.t=${(envelope.ev as any)?.t} connected=${this.socket.connected}`);
         if (!this.socket.connected) {
             logger.debug('[API] Socket not connected, session protocol message lost');
             return;
@@ -515,7 +516,7 @@ export class ApiSessionClient extends EventEmitter {
      * Same shape as sendSessionProtocolMessage so the App's timer stops correctly.
      */
     sendSessionLifecycleEnvelope(envelope: { id?: string; role: string; ev: Record<string, unknown>; meta?: Record<string, unknown> }): void {
-        logger.debug(`[API] sendSessionLifecycleEnvelope ev.t=${(envelope.ev as any)?.t} sessionId=${this.sessionId}`);
+        console.error(`[API] sendSessionLifecycleEnvelope ev.t=${(envelope.ev as any)?.t} connected=${this.socket.connected}`);
         this.sendSessionProtocolMessage(envelope);
     }
 
