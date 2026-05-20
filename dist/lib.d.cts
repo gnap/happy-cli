@@ -707,6 +707,16 @@ declare class ApiSessionClient extends EventEmitter {
         ev: Record<string, unknown>;
         meta?: Record<string, unknown>;
     }): void;
+    /**
+     * Send a turn-end / turn-start lifecycle envelope.
+     * Same shape as sendSessionProtocolMessage so the App's timer stops correctly.
+     */
+    sendSessionLifecycleEnvelope(envelope: {
+        id?: string;
+        role: string;
+        ev: Record<string, unknown>;
+        meta?: Record<string, unknown>;
+    }): void;
     close(): Promise<void>;
 }
 
@@ -879,11 +889,11 @@ declare const AIBackendProfileSchema: z.ZodObject<{
         name: z.ZodString;
         value: z.ZodString;
     }, "strip", z.ZodTypeAny, {
-        value: string;
         name: string;
+        value: string;
     }, {
-        value: string;
         name: string;
+        value: string;
     }>, "many">>;
     defaultSessionType: z.ZodOptional<z.ZodEnum<["simple", "worktree"]>>;
     defaultPermissionMode: z.ZodOptional<z.ZodEnum<["default", "acceptEdits", "bypassPermissions", "plan", "read-only", "safe-yolo", "yolo"]>>;
@@ -909,8 +919,8 @@ declare const AIBackendProfileSchema: z.ZodObject<{
     id: string;
     name: string;
     environmentVariables: {
-        value: string;
         name: string;
+        value: string;
     }[];
     compatibility: {
         claude: boolean;
@@ -980,8 +990,8 @@ declare const AIBackendProfileSchema: z.ZodObject<{
         updateEnvironment?: boolean | undefined;
     } | undefined;
     environmentVariables?: {
-        value: string;
         name: string;
+        value: string;
     }[] | undefined;
     defaultSessionType?: "simple" | "worktree" | undefined;
     defaultPermissionMode?: "default" | "acceptEdits" | "bypassPermissions" | "plan" | "read-only" | "safe-yolo" | "yolo" | undefined;

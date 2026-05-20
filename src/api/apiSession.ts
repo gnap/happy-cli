@@ -475,6 +475,14 @@ export class ApiSessionClient extends EventEmitter {
         });
     }
 
+    /**
+     * Send a turn-end / turn-start lifecycle envelope.
+     * Same shape as sendSessionProtocolMessage so the App's timer stops correctly.
+     */
+    sendSessionLifecycleEnvelope(envelope: { id?: string; role: string; ev: Record<string, unknown>; meta?: Record<string, unknown> }): void {
+        this.sendSessionProtocolMessage(envelope);
+    }
+
     async close() {
         logger.debug('[API] socket.close() called');
         this.socket.close();

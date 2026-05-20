@@ -1,6 +1,6 @@
 'use strict';
 
-var api = require('./registerKillSessionHandler-DK-pvnHG.cjs');
+var api = require('./registerKillSessionHandler-CHEpa5QY.cjs');
 var node_crypto = require('node:crypto');
 
 class BasePermissionHandler {
