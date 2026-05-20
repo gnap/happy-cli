@@ -1,58 +1,36 @@
-'use strict';
-
-var z = require('zod');
-var fs$2 = require('fs/promises');
-var os$1 = require('os');
-var tmp = require('tmp');
-var axios = require('axios');
-var node_events = require('node:events');
-var socket_ioClient = require('socket.io-client');
-var node_crypto = require('node:crypto');
-var tweetnacl = require('tweetnacl');
-var child_process = require('child_process');
-var util = require('util');
-var crypto = require('crypto');
-var path = require('path');
-var url = require('url');
-var expoServerSdk = require('expo-server-sdk');
-var chalk = require('chalk');
-var qrcode = require('qrcode-terminal');
-var promises = require('node:fs/promises');
-var fs = require('node:fs');
-var open = require('open');
-var React = require('react');
-var ink = require('ink');
-var fs$1 = require('fs');
-var psList = require('ps-list');
-var spawn = require('cross-spawn');
-var node_path = require('node:path');
-var fastify = require('fastify');
-var fastifyTypeProviderZod = require('fastify-type-provider-zod');
-var mcp_js = require('@modelcontextprotocol/sdk/server/mcp.js');
-var node_http = require('node:http');
-var streamableHttp_js = require('@modelcontextprotocol/sdk/server/streamableHttp.js');
-var os = require('node:os');
-
-var _documentCurrentScript = typeof document !== 'undefined' ? document.currentScript : null;
-function _interopNamespaceDefault(e) {
-  var n = Object.create(null);
-  if (e) {
-    Object.keys(e).forEach(function (k) {
-      if (k !== 'default') {
-        var d = Object.getOwnPropertyDescriptor(e, k);
-        Object.defineProperty(n, k, d.get ? d : {
-          enumerable: true,
-          get: function () { return e[k]; }
-        });
-      }
-    });
-  }
-  n.default = e;
-  return Object.freeze(n);
-}
-
-var z__namespace = /*#__PURE__*/_interopNamespaceDefault(z);
-var tmp__namespace = /*#__PURE__*/_interopNamespaceDefault(tmp);
+import * as z from 'zod';
+import { z as z$1 } from 'zod';
+import fs, { readFile, stat, writeFile, readdir } from 'fs/promises';
+import os, { platform } from 'os';
+import * as tmp from 'tmp';
+import axios from 'axios';
+import { EventEmitter } from 'node:events';
+import { io } from 'socket.io-client';
+import { randomBytes, createCipheriv, createDecipheriv, randomUUID } from 'node:crypto';
+import tweetnacl from 'tweetnacl';
+import { spawn, exec } from 'child_process';
+import { promisify } from 'util';
+import { createHash } from 'crypto';
+import { dirname, resolve, join as join$1 } from 'path';
+import { fileURLToPath } from 'url';
+import { Expo } from 'expo-server-sdk';
+import chalk from 'chalk';
+import qrcode from 'qrcode-terminal';
+import { readFile as readFile$1, open, stat as stat$1, unlink, mkdir, writeFile as writeFile$1, rename } from 'node:fs/promises';
+import { existsSync, mkdirSync, readdirSync, statSync, constants, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
+import open$1 from 'open';
+import React, { useState } from 'react';
+import { useInput, Box, Text, render } from 'ink';
+import { appendFileSync, readFileSync as readFileSync$1 } from 'fs';
+import psList from 'ps-list';
+import spawn$1 from 'cross-spawn';
+import { join, basename } from 'node:path';
+import fastify from 'fastify';
+import { validatorCompiler, serializerCompiler } from 'fastify-type-provider-zod';
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { createServer } from 'node:http';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import { homedir } from 'node:os';
 
 var name = "happy-coder";
 var version = "0.14.0-0";
@@ -240,16 +218,16 @@ class Configuration {
     const args = process.argv.slice(2);
     this.isDaemonProcess = args.length >= 2 && args[0] === "daemon" && args[1] === "start-sync";
     if (process.env.HAPPY_HOME_DIR) {
-      const expandedPath = process.env.HAPPY_HOME_DIR.replace(/^~/, os.homedir());
+      const expandedPath = process.env.HAPPY_HOME_DIR.replace(/^~/, homedir());
       this.happyHomeDir = expandedPath;
     } else {
-      this.happyHomeDir = node_path.join(os.homedir(), ".happy");
+      this.happyHomeDir = join(homedir(), ".happy");
     }
-    this.logsDir = node_path.join(this.happyHomeDir, "logs");
-    this.settingsFile = node_path.join(this.happyHomeDir, "settings.json");
-    this.privateKeyFile = node_path.join(this.happyHomeDir, "access.key");
-    this.daemonStateFile = node_path.join(this.happyHomeDir, "daemon.state.json");
-    this.daemonLockFile = node_path.join(this.happyHomeDir, "daemon.state.json.lock");
+    this.logsDir = join(this.happyHomeDir, "logs");
+    this.settingsFile = join(this.happyHomeDir, "settings.json");
+    this.privateKeyFile = join(this.happyHomeDir, "access.key");
+    this.daemonStateFile = join(this.happyHomeDir, "daemon.state.json");
+    this.daemonLockFile = join(this.happyHomeDir, "daemon.state.json.lock");
     this.isExperimentalEnabled = ["true", "1", "yes"].includes(process.env.HAPPY_EXPERIMENTAL?.toLowerCase() || "");
     this.disableCaffeinate = ["true", "1", "yes"].includes(process.env.HAPPY_DISABLE_CAFFEINATE?.toLowerCase() || "");
     this.currentCliVersion = packageJson.version;
@@ -262,11 +240,11 @@ class Configuration {
     if (!this.isDaemonProcess && variant === "dev") {
       console.log("\x1B[33m\u{1F527} DEV MODE\x1B[0m - Data: " + this.happyHomeDir);
     }
-    if (!fs.existsSync(this.happyHomeDir)) {
-      fs.mkdirSync(this.happyHomeDir, { recursive: true });
+    if (!existsSync(this.happyHomeDir)) {
+      mkdirSync(this.happyHomeDir, { recursive: true });
     }
-    if (!fs.existsSync(this.logsDir)) {
-      fs.mkdirSync(this.logsDir, { recursive: true });
+    if (!existsSync(this.logsDir)) {
+      mkdirSync(this.logsDir, { recursive: true });
     }
   }
 }
@@ -296,7 +274,7 @@ function createTimestampForLogEntry(date = /* @__PURE__ */ new Date()) {
 function getSessionLogPath() {
   const timestamp = createTimestampForFilename();
   const filename = configuration.isDaemonProcess ? `${timestamp}-daemon.log` : `${timestamp}.log`;
-  return node_path.join(configuration.logsDir, filename);
+  return join(configuration.logsDir, filename);
 }
 class Logger {
   constructor(logFilePath = getSessionLogPath()) {
@@ -421,7 +399,7 @@ class Logger {
       });
     }
     try {
-      fs$1.appendFileSync(this.logFilePath, logLine);
+      appendFileSync(this.logFilePath, logLine);
     } catch (appendError) {
       if (process.env.DEBUG) {
         console.error("[DEV MODE ONLY THROWING] Failed to append to log file:", appendError);
@@ -434,12 +412,12 @@ let logger = new Logger();
 async function listDaemonLogFiles(limit = 50) {
   try {
     const logsDir = configuration.logsDir;
-    if (!fs.existsSync(logsDir)) {
+    if (!existsSync(logsDir)) {
       return [];
     }
-    const logs = fs.readdirSync(logsDir).filter((file) => file.endsWith("-daemon.log")).map((file) => {
-      const fullPath = node_path.join(logsDir, file);
-      const stats = fs.statSync(fullPath);
+    const logs = readdirSync(logsDir).filter((file) => file.endsWith("-daemon.log")).map((file) => {
+      const fullPath = join(logsDir, file);
+      const stats = statSync(fullPath);
       return { file, path: fullPath, modified: stats.mtime };
     }).sort((a, b) => b.modified.getTime() - a.modified.getTime());
     try {
@@ -448,10 +426,10 @@ async function listDaemonLogFiles(limit = 50) {
       if (!state) {
         return logs;
       }
-      if (state.daemonLogPath && fs.existsSync(state.daemonLogPath)) {
-        const stats = fs.statSync(state.daemonLogPath);
+      if (state.daemonLogPath && existsSync(state.daemonLogPath)) {
+        const stats = statSync(state.daemonLogPath);
         const persisted = {
-          file: node_path.basename(state.daemonLogPath),
+          file: basename(state.daemonLogPath),
           path: state.daemonLogPath,
           modified: stats.mtime
         };
@@ -475,136 +453,136 @@ async function getLatestDaemonLog() {
   return latest || null;
 }
 
-const SessionMessageContentSchema = z.z.object({
-  c: z.z.string(),
+const SessionMessageContentSchema = z$1.object({
+  c: z$1.string(),
   // Base64 encoded encrypted content
-  t: z.z.literal("encrypted")
+  t: z$1.literal("encrypted")
 });
-const UpdateBodySchema = z.z.object({
-  message: z.z.object({
-    id: z.z.string(),
-    seq: z.z.number(),
+const UpdateBodySchema = z$1.object({
+  message: z$1.object({
+    id: z$1.string(),
+    seq: z$1.number(),
     content: SessionMessageContentSchema
   }),
-  sid: z.z.string(),
+  sid: z$1.string(),
   // Session ID
-  t: z.z.literal("new-message")
+  t: z$1.literal("new-message")
 });
-const UpdateSessionBodySchema = z.z.object({
-  t: z.z.literal("update-session"),
-  sid: z.z.string(),
-  metadata: z.z.object({
-    version: z.z.number(),
-    value: z.z.string()
+const UpdateSessionBodySchema = z$1.object({
+  t: z$1.literal("update-session"),
+  sid: z$1.string(),
+  metadata: z$1.object({
+    version: z$1.number(),
+    value: z$1.string()
   }).nullish(),
-  agentState: z.z.object({
-    version: z.z.number(),
-    value: z.z.string()
+  agentState: z$1.object({
+    version: z$1.number(),
+    value: z$1.string()
   }).nullish()
 });
-const UpdateMachineBodySchema = z.z.object({
-  t: z.z.literal("update-machine"),
-  machineId: z.z.string(),
-  metadata: z.z.object({
-    version: z.z.number(),
-    value: z.z.string()
+const UpdateMachineBodySchema = z$1.object({
+  t: z$1.literal("update-machine"),
+  machineId: z$1.string(),
+  metadata: z$1.object({
+    version: z$1.number(),
+    value: z$1.string()
   }).nullish(),
-  daemonState: z.z.object({
-    version: z.z.number(),
-    value: z.z.string()
+  daemonState: z$1.object({
+    version: z$1.number(),
+    value: z$1.string()
   }).nullish()
 });
-z.z.object({
-  id: z.z.string(),
-  seq: z.z.number(),
-  body: z.z.union([
+z$1.object({
+  id: z$1.string(),
+  seq: z$1.number(),
+  body: z$1.union([
     UpdateBodySchema,
     UpdateSessionBodySchema,
     UpdateMachineBodySchema
   ]),
-  createdAt: z.z.number()
+  createdAt: z$1.number()
 });
-z.z.object({
-  host: z.z.string(),
-  platform: z.z.string(),
-  happyCliVersion: z.z.string(),
-  homeDir: z.z.string(),
-  happyHomeDir: z.z.string(),
-  happyLibDir: z.z.string()
+z$1.object({
+  host: z$1.string(),
+  platform: z$1.string(),
+  happyCliVersion: z$1.string(),
+  homeDir: z$1.string(),
+  happyHomeDir: z$1.string(),
+  happyLibDir: z$1.string()
 });
-z.z.object({
-  status: z.z.union([
-    z.z.enum(["running", "shutting-down"]),
-    z.z.string()
+z$1.object({
+  status: z$1.union([
+    z$1.enum(["running", "shutting-down"]),
+    z$1.string()
     // Forward compatibility
   ]),
-  pid: z.z.number().optional(),
-  httpPort: z.z.number().optional(),
-  startedAt: z.z.number().optional(),
-  shutdownRequestedAt: z.z.number().optional(),
-  shutdownSource: z.z.union([
-    z.z.enum(["mobile-app", "cli", "os-signal", "unknown"]),
-    z.z.string()
+  pid: z$1.number().optional(),
+  httpPort: z$1.number().optional(),
+  startedAt: z$1.number().optional(),
+  shutdownRequestedAt: z$1.number().optional(),
+  shutdownSource: z$1.union([
+    z$1.enum(["mobile-app", "cli", "os-signal", "unknown"]),
+    z$1.string()
     // Forward compatibility
   ]).optional()
 });
-z.z.object({
+z$1.object({
   content: SessionMessageContentSchema,
-  createdAt: z.z.number(),
-  id: z.z.string(),
-  seq: z.z.number(),
-  updatedAt: z.z.number()
+  createdAt: z$1.number(),
+  id: z$1.string(),
+  seq: z$1.number(),
+  updatedAt: z$1.number()
 });
-const MessageMetaSchema = z.z.object({
-  sentFrom: z.z.string().optional(),
+const MessageMetaSchema = z$1.object({
+  sentFrom: z$1.string().optional(),
   // Source identifier
-  permissionMode: z.z.enum(["default", "acceptEdits", "bypassPermissions", "plan", "read-only", "safe-yolo", "yolo"]).optional(),
+  permissionMode: z$1.enum(["default", "acceptEdits", "bypassPermissions", "plan", "read-only", "safe-yolo", "yolo"]).optional(),
   // Permission mode for this message
-  model: z.z.string().nullable().optional(),
+  model: z$1.string().nullable().optional(),
   // Model name for this message (null = reset)
-  fallbackModel: z.z.string().nullable().optional(),
+  fallbackModel: z$1.string().nullable().optional(),
   // Fallback model for this message (null = reset)
-  customSystemPrompt: z.z.string().nullable().optional(),
+  customSystemPrompt: z$1.string().nullable().optional(),
   // Custom system prompt for this message (null = reset)
-  appendSystemPrompt: z.z.string().nullable().optional(),
+  appendSystemPrompt: z$1.string().nullable().optional(),
   // Append to system prompt for this message (null = reset)
-  allowedTools: z.z.array(z.z.string()).nullable().optional(),
+  allowedTools: z$1.array(z$1.string()).nullable().optional(),
   // Allowed tools for this message (null = reset)
-  disallowedTools: z.z.array(z.z.string()).nullable().optional()
+  disallowedTools: z$1.array(z$1.string()).nullable().optional()
   // Disallowed tools for this message (null = reset)
 });
-z.z.object({
-  session: z.z.object({
-    id: z.z.string(),
-    tag: z.z.string(),
-    seq: z.z.number(),
-    createdAt: z.z.number(),
-    updatedAt: z.z.number(),
-    metadata: z.z.string(),
-    metadataVersion: z.z.number(),
-    agentState: z.z.string().nullable(),
-    agentStateVersion: z.z.number()
+z$1.object({
+  session: z$1.object({
+    id: z$1.string(),
+    tag: z$1.string(),
+    seq: z$1.number(),
+    createdAt: z$1.number(),
+    updatedAt: z$1.number(),
+    metadata: z$1.string(),
+    metadataVersion: z$1.number(),
+    agentState: z$1.string().nullable(),
+    agentStateVersion: z$1.number()
   })
 });
-const UserMessageSchema = z.z.object({
-  role: z.z.literal("user"),
-  content: z.z.object({
-    type: z.z.literal("text"),
-    text: z.z.string()
+const UserMessageSchema = z$1.object({
+  role: z$1.literal("user"),
+  content: z$1.object({
+    type: z$1.literal("text"),
+    text: z$1.string()
   }),
-  localKey: z.z.string().optional(),
+  localKey: z$1.string().optional(),
   // Mobile messages include this
   meta: MessageMetaSchema.optional()
 });
-const AgentMessageSchema = z.z.object({
-  role: z.z.literal("agent"),
-  content: z.z.object({
-    type: z.z.literal("output"),
-    data: z.z.any()
+const AgentMessageSchema = z$1.object({
+  role: z$1.literal("agent"),
+  content: z$1.object({
+    type: z$1.literal("output"),
+    data: z$1.any()
   }),
   meta: MessageMetaSchema.optional()
 });
-z.z.union([UserMessageSchema, AgentMessageSchema]);
+z$1.union([UserMessageSchema, AgentMessageSchema]);
 
 function encodeBase64(buffer, variant = "base64") {
   if (variant === "base64url") {
@@ -623,7 +601,7 @@ function decodeBase64(base64, variant = "base64") {
   return new Uint8Array(Buffer.from(base64, "base64"));
 }
 function getRandomBytes(size) {
-  return new Uint8Array(node_crypto.randomBytes(size));
+  return new Uint8Array(randomBytes(size));
 }
 function libsodiumEncryptForPublicKey(data, recipientPublicKey) {
   const ephemeralKeyPair = tweetnacl.box.keyPair();
@@ -654,7 +632,7 @@ function decryptLegacy(data, secret) {
 }
 function encryptWithDataKey(data, dataKey) {
   const nonce = getRandomBytes(12);
-  const cipher = node_crypto.createCipheriv("aes-256-gcm", dataKey, nonce);
+  const cipher = createCipheriv("aes-256-gcm", dataKey, nonce);
   const plaintext = new TextEncoder().encode(JSON.stringify(data));
   const encrypted = Buffer.concat([
     cipher.update(plaintext),
@@ -682,7 +660,7 @@ function decryptWithDataKey(bundle, dataKey) {
   const authTag = bundle.slice(bundle.length - 16);
   const ciphertext = bundle.slice(13, bundle.length - 16);
   try {
-    const decipher = node_crypto.createDecipheriv("aes-256-gcm", dataKey, nonce);
+    const decipher = createDecipheriv("aes-256-gcm", dataKey, nonce);
     decipher.setAuthTag(authTag);
     const decrypted = Buffer.concat([
       decipher.update(ciphertext),
@@ -863,16 +841,16 @@ class RpcHandlerManager {
   }
 }
 
-const __dirname$1 = path.dirname(url.fileURLToPath((typeof document === 'undefined' ? require('u' + 'rl').pathToFileURL(__filename).href : (_documentCurrentScript && _documentCurrentScript.tagName.toUpperCase() === 'SCRIPT' && _documentCurrentScript.src || new URL('registerKillSessionHandler-BMLb3vho.cjs', document.baseURI).href))));
+const __dirname$1 = dirname(fileURLToPath(import.meta.url));
 function projectPath() {
-  const path$1 = path.resolve(__dirname$1, "..");
-  return path$1;
+  const path = resolve(__dirname$1, "..");
+  return path;
 }
 
 function run$1(args, options) {
-  const RUNNER_PATH = path.resolve(path.join(projectPath(), "scripts", "ripgrep_launcher.cjs"));
+  const RUNNER_PATH = resolve(join$1(projectPath(), "scripts", "ripgrep_launcher.cjs"));
   return new Promise((resolve2, reject) => {
-    const child = child_process.spawn("node", [RUNNER_PATH, JSON.stringify(args)], {
+    const child = spawn("node", [RUNNER_PATH, JSON.stringify(args)], {
       stdio: ["pipe", "pipe", "pipe"],
       cwd: options?.cwd
     });
@@ -898,14 +876,14 @@ function run$1(args, options) {
 }
 
 function getBinaryPath() {
-  const platformName = os$1.platform();
+  const platformName = platform();
   const binaryName = platformName === "win32" ? "difft.exe" : "difft";
-  return path.resolve(path.join(projectPath(), "tools", "unpacked", binaryName));
+  return resolve(join$1(projectPath(), "tools", "unpacked", binaryName));
 }
 function run(args, options) {
   const binaryPath = getBinaryPath();
   return new Promise((resolve2, reject) => {
-    const child = child_process.spawn(binaryPath, args, {
+    const child = spawn(binaryPath, args, {
       stdio: ["pipe", "pipe", "pipe"],
       cwd: options?.cwd,
       env: {
@@ -936,8 +914,8 @@ function run(args, options) {
 }
 
 function validatePath(targetPath, workingDirectory) {
-  const resolvedTarget = path.resolve(workingDirectory, targetPath);
-  const resolvedWorkingDir = path.resolve(workingDirectory);
+  const resolvedTarget = resolve(workingDirectory, targetPath);
+  const resolvedWorkingDir = resolve(workingDirectory);
   if (!resolvedTarget.startsWith(resolvedWorkingDir + "/") && resolvedTarget !== resolvedWorkingDir) {
     return {
       valid: false,
@@ -947,7 +925,7 @@ function validatePath(targetPath, workingDirectory) {
   return { valid: true };
 }
 
-const execAsync = util.promisify(child_process.exec);
+const execAsync = promisify(exec);
 function registerCommonHandlers(rpcHandlerManager, workingDirectory) {
   rpcHandlerManager.registerHandler("bash", async (data) => {
     logger.debug("Shell command request:", data.command);
@@ -1020,7 +998,7 @@ function registerCommonHandlers(rpcHandlerManager, workingDirectory) {
       return { success: false, error: validation.error };
     }
     try {
-      const buffer = await fs$2.readFile(data.path);
+      const buffer = await readFile(data.path);
       const content = buffer.toString("base64");
       return { success: true, content };
     } catch (error) {
@@ -1037,8 +1015,8 @@ function registerCommonHandlers(rpcHandlerManager, workingDirectory) {
     try {
       if (data.expectedHash !== null && data.expectedHash !== void 0) {
         try {
-          const existingBuffer = await fs$2.readFile(data.path);
-          const existingHash = crypto.createHash("sha256").update(existingBuffer).digest("hex");
+          const existingBuffer = await readFile(data.path);
+          const existingHash = createHash("sha256").update(existingBuffer).digest("hex");
           if (existingHash !== data.expectedHash) {
             return {
               success: false,
@@ -1057,7 +1035,7 @@ function registerCommonHandlers(rpcHandlerManager, workingDirectory) {
         }
       } else {
         try {
-          await fs$2.stat(data.path);
+          await stat(data.path);
           return {
             success: false,
             error: "File already exists but was expected to be new"
@@ -1070,8 +1048,8 @@ function registerCommonHandlers(rpcHandlerManager, workingDirectory) {
         }
       }
       const buffer = Buffer.from(data.content, "base64");
-      await fs$2.writeFile(data.path, buffer);
-      const hash = crypto.createHash("sha256").update(buffer).digest("hex");
+      await writeFile(data.path, buffer);
+      const hash = createHash("sha256").update(buffer).digest("hex");
       return { success: true, hash };
     } catch (error) {
       logger.debug("Failed to write file:", error);
@@ -1085,10 +1063,10 @@ function registerCommonHandlers(rpcHandlerManager, workingDirectory) {
       return { success: false, error: validation.error };
     }
     try {
-      const entries = await fs$2.readdir(data.path, { withFileTypes: true });
+      const entries = await readdir(data.path, { withFileTypes: true });
       const directoryEntries = await Promise.all(
         entries.map(async (entry) => {
-          const fullPath = path.join(data.path, entry.name);
+          const fullPath = join$1(data.path, entry.name);
           let type = "other";
           let size;
           let modified;
@@ -1098,7 +1076,7 @@ function registerCommonHandlers(rpcHandlerManager, workingDirectory) {
             type = "file";
           }
           try {
-            const stats = await fs$2.stat(fullPath);
+            const stats = await stat(fullPath);
             size = stats.size;
             modified = stats.mtime.getTime();
           } catch (error) {
@@ -1129,26 +1107,26 @@ function registerCommonHandlers(rpcHandlerManager, workingDirectory) {
     if (!validation.valid) {
       return { success: false, error: validation.error };
     }
-    async function buildTree(path$1, name, currentDepth) {
+    async function buildTree(path, name, currentDepth) {
       try {
-        const stats = await fs$2.stat(path$1);
+        const stats = await stat(path);
         const node = {
           name,
-          path: path$1,
+          path,
           type: stats.isDirectory() ? "directory" : "file",
           size: stats.size,
           modified: stats.mtime.getTime()
         };
         if (stats.isDirectory() && currentDepth < data.maxDepth) {
-          const entries = await fs$2.readdir(path$1, { withFileTypes: true });
+          const entries = await readdir(path, { withFileTypes: true });
           const children = [];
           await Promise.all(
             entries.map(async (entry) => {
               if (entry.isSymbolicLink()) {
-                logger.debug(`Skipping symlink: ${path.join(path$1, entry.name)}`);
+                logger.debug(`Skipping symlink: ${join$1(path, entry.name)}`);
                 return;
               }
-              const childPath = path.join(path$1, entry.name);
+              const childPath = join$1(path, entry.name);
               const childNode = await buildTree(childPath, entry.name, currentDepth + 1);
               if (childNode) {
                 children.push(childNode);
@@ -1164,7 +1142,7 @@ function registerCommonHandlers(rpcHandlerManager, workingDirectory) {
         }
         return node;
       } catch (error) {
-        logger.debug(`Failed to process ${path$1}:`, error instanceof Error ? error.message : String(error));
+        logger.debug(`Failed to process ${path}:`, error instanceof Error ? error.message : String(error));
         return null;
       }
     }
@@ -1233,7 +1211,7 @@ function registerCommonHandlers(rpcHandlerManager, workingDirectory) {
   });
 }
 
-class ApiSessionClient extends node_events.EventEmitter {
+class ApiSessionClient extends EventEmitter {
   token;
   sessionId;
   metadata;
@@ -1265,7 +1243,7 @@ class ApiSessionClient extends node_events.EventEmitter {
       logger: (msg, data) => logger.debug(msg, data)
     });
     registerCommonHandlers(this.rpcHandlerManager, this.metadata.path);
-    this.socket = socket_ioClient.io(configuration.serverUrl, {
+    this.socket = io(configuration.serverUrl, {
       auth: {
         token: this.token,
         clientType: "session-scoped",
@@ -1452,7 +1430,7 @@ class ApiSessionClient extends node_events.EventEmitter {
     let content = {
       role: "agent",
       content: {
-        id: id ?? node_crypto.randomUUID(),
+        id: id ?? randomUUID(),
         type: "event",
         data: event
       }
@@ -1612,7 +1590,7 @@ class ApiSessionClient extends node_events.EventEmitter {
     }
     const content = {
       role: "session",
-      content: { type: "session", data: envelope },
+      content: envelope,
       meta: { sentFrom: "cli" }
     };
     const encrypted = encodeBase64(encrypt(this.encryptionKey, this.encryptionVariant, content));
@@ -1748,7 +1726,7 @@ class ApiMachineClient {
   connect() {
     const serverUrl = configuration.serverUrl.replace(/^http/, "ws");
     logger.debug(`[API MACHINE] Connecting to ${serverUrl}`);
-    this.socket = socket_ioClient.io(serverUrl, {
+    this.socket = io(serverUrl, {
       transports: ["websocket"],
       auth: {
         token: this.token,
@@ -1843,7 +1821,7 @@ class PushNotificationClient {
   constructor(token, baseUrl = "https://api.cluster-fluster.com") {
     this.token = token;
     this.baseUrl = baseUrl;
-    this.expo = new expoServerSdk.Expo();
+    this.expo = new Expo();
   }
   /**
    * Fetch all push tokens for the authenticated user
@@ -1877,9 +1855,9 @@ class PushNotificationClient {
     logger.debug(`Sending ${messages.length} push notifications`);
     const validMessages = messages.filter((message) => {
       if (Array.isArray(message.to)) {
-        return message.to.every((token) => expoServerSdk.Expo.isExpoPushToken(token));
+        return message.to.every((token) => Expo.isExpoPushToken(token));
       }
-      return expoServerSdk.Expo.isExpoPushToken(message.to);
+      return Expo.isExpoPushToken(message.to);
     });
     if (validMessages.length === 0) {
       logger.debug("No valid Expo push tokens found");
@@ -2406,49 +2384,49 @@ var api = /*#__PURE__*/Object.freeze({
   ApiClient: ApiClient
 });
 
-const UsageSchema = z.z.object({
-  input_tokens: z.z.number().int().nonnegative(),
-  cache_creation_input_tokens: z.z.number().int().nonnegative().optional(),
-  cache_read_input_tokens: z.z.number().int().nonnegative().optional(),
-  output_tokens: z.z.number().int().nonnegative(),
-  service_tier: z.z.string().optional()
+const UsageSchema = z$1.object({
+  input_tokens: z$1.number().int().nonnegative(),
+  cache_creation_input_tokens: z$1.number().int().nonnegative().optional(),
+  cache_read_input_tokens: z$1.number().int().nonnegative().optional(),
+  output_tokens: z$1.number().int().nonnegative(),
+  service_tier: z$1.string().optional()
 }).passthrough();
-const RawJSONLinesSchema = z.z.discriminatedUnion("type", [
+const RawJSONLinesSchema = z$1.discriminatedUnion("type", [
   // User message - validates uuid and message.content
-  z.z.object({
-    type: z.z.literal("user"),
-    isSidechain: z.z.boolean().optional(),
-    isMeta: z.z.boolean().optional(),
-    uuid: z.z.string(),
+  z$1.object({
+    type: z$1.literal("user"),
+    isSidechain: z$1.boolean().optional(),
+    isMeta: z$1.boolean().optional(),
+    uuid: z$1.string(),
     // Used in getMessageKey()
-    message: z.z.object({
-      content: z.z.union([z.z.string(), z.z.any()])
+    message: z$1.object({
+      content: z$1.union([z$1.string(), z$1.any()])
       // Used in sessionScanner.ts
     }).passthrough()
   }).passthrough(),
   // Assistant message - only validates uuid and type
   // message object is optional to handle synthetic error messages (isApiErrorMessage: true)
   // which may have different structure than normal assistant messages
-  z.z.object({
-    uuid: z.z.string(),
-    type: z.z.literal("assistant"),
-    message: z.z.object({
+  z$1.object({
+    uuid: z$1.string(),
+    type: z$1.literal("assistant"),
+    message: z$1.object({
       usage: UsageSchema.optional()
       // Used in apiSession.ts
     }).passthrough().optional()
   }).passthrough(),
   // Summary message - validates summary and leafUuid
-  z.z.object({
-    type: z.z.literal("summary"),
-    summary: z.z.string(),
+  z$1.object({
+    type: z$1.literal("summary"),
+    summary: z$1.string(),
     // Used in apiSession.ts
-    leafUuid: z.z.string()
+    leafUuid: z$1.string()
     // Used in getMessageKey()
   }).passthrough(),
   // System message - validates uuid
-  z.z.object({
-    type: z.z.literal("system"),
-    uuid: z.z.string()
+  z$1.object({
+    type: z$1.literal("system"),
+    uuid: z$1.string()
     // Used in getMessageKey()
   }).passthrough()
 ]);
@@ -2481,44 +2459,44 @@ function getRuntime() {
 }
 const isBun = () => getRuntime() === "bun";
 
-const AnthropicConfigSchema = z__namespace.object({
-  baseUrl: z__namespace.string().url().optional(),
-  authToken: z__namespace.string().optional(),
-  model: z__namespace.string().optional()
+const AnthropicConfigSchema = z.object({
+  baseUrl: z.string().url().optional(),
+  authToken: z.string().optional(),
+  model: z.string().optional()
 });
-const OpenAIConfigSchema = z__namespace.object({
-  apiKey: z__namespace.string().optional(),
-  baseUrl: z__namespace.string().url().optional(),
-  model: z__namespace.string().optional()
+const OpenAIConfigSchema = z.object({
+  apiKey: z.string().optional(),
+  baseUrl: z.string().url().optional(),
+  model: z.string().optional()
 });
-const AzureOpenAIConfigSchema = z__namespace.object({
-  apiKey: z__namespace.string().optional(),
-  endpoint: z__namespace.string().url().optional(),
-  apiVersion: z__namespace.string().optional(),
-  deploymentName: z__namespace.string().optional()
+const AzureOpenAIConfigSchema = z.object({
+  apiKey: z.string().optional(),
+  endpoint: z.string().url().optional(),
+  apiVersion: z.string().optional(),
+  deploymentName: z.string().optional()
 });
-const TogetherAIConfigSchema = z__namespace.object({
-  apiKey: z__namespace.string().optional(),
-  model: z__namespace.string().optional()
+const TogetherAIConfigSchema = z.object({
+  apiKey: z.string().optional(),
+  model: z.string().optional()
 });
-const TmuxConfigSchema = z__namespace.object({
-  sessionName: z__namespace.string().optional(),
-  tmpDir: z__namespace.string().optional(),
-  updateEnvironment: z__namespace.boolean().optional()
+const TmuxConfigSchema = z.object({
+  sessionName: z.string().optional(),
+  tmpDir: z.string().optional(),
+  updateEnvironment: z.boolean().optional()
 });
-const EnvironmentVariableSchema = z__namespace.object({
-  name: z__namespace.string().regex(/^[A-Z_][A-Z0-9_]*$/, "Invalid environment variable name"),
-  value: z__namespace.string()
+const EnvironmentVariableSchema = z.object({
+  name: z.string().regex(/^[A-Z_][A-Z0-9_]*$/, "Invalid environment variable name"),
+  value: z.string()
 });
-const ProfileCompatibilitySchema = z__namespace.object({
-  claude: z__namespace.boolean().default(true),
-  codex: z__namespace.boolean().default(true),
-  gemini: z__namespace.boolean().default(true)
+const ProfileCompatibilitySchema = z.object({
+  claude: z.boolean().default(true),
+  codex: z.boolean().default(true),
+  gemini: z.boolean().default(true)
 });
-const AIBackendProfileSchema = z__namespace.object({
-  id: z__namespace.string().uuid(),
-  name: z__namespace.string().min(1).max(100),
-  description: z__namespace.string().max(500).optional(),
+const AIBackendProfileSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string().min(1).max(100),
+  description: z.string().max(500).optional(),
   // Agent-specific configurations
   anthropicConfig: AnthropicConfigSchema.optional(),
   openaiConfig: OpenAIConfigSchema.optional(),
@@ -2527,11 +2505,11 @@ const AIBackendProfileSchema = z__namespace.object({
   // Tmux configuration
   tmuxConfig: TmuxConfigSchema.optional(),
   // Environment variables (validated)
-  environmentVariables: z__namespace.array(EnvironmentVariableSchema).default([]),
+  environmentVariables: z.array(EnvironmentVariableSchema).default([]),
   // Default session type for this profile
-  defaultSessionType: z__namespace.enum(["simple", "worktree"]).optional(),
+  defaultSessionType: z.enum(["simple", "worktree"]).optional(),
   // Default permission mode for this profile (supports both Claude and Codex modes)
-  defaultPermissionMode: z__namespace.enum([
+  defaultPermissionMode: z.enum([
     "default",
     "acceptEdits",
     "bypassPermissions",
@@ -2543,15 +2521,15 @@ const AIBackendProfileSchema = z__namespace.object({
     // Codex modes
   ]).optional(),
   // Default model mode for this profile
-  defaultModelMode: z__namespace.string().optional(),
+  defaultModelMode: z.string().optional(),
   // Compatibility metadata
   compatibility: ProfileCompatibilitySchema.default({ claude: true, codex: true, gemini: true }),
   // Built-in profile indicator
-  isBuiltIn: z__namespace.boolean().default(false),
+  isBuiltIn: z.boolean().default(false),
   // Metadata
-  createdAt: z__namespace.number().default(() => Date.now()),
-  updatedAt: z__namespace.number().default(() => Date.now()),
-  version: z__namespace.string().default("1.0.0")
+  createdAt: z.number().default(() => Date.now()),
+  updatedAt: z.number().default(() => Date.now()),
+  version: z.string().default("1.0.0")
 });
 function validateProfileForAgent(profile, agent) {
   return profile.compatibility[agent];
@@ -2611,11 +2589,11 @@ function migrateSettings(raw, fromVersion) {
   return migrated;
 }
 async function readSettings() {
-  if (!fs.existsSync(configuration.settingsFile)) {
+  if (!existsSync(configuration.settingsFile)) {
     return { ...defaultSettings };
   }
   try {
-    const content = await promises.readFile(configuration.settingsFile, "utf8");
+    const content = await readFile$1(configuration.settingsFile, "utf8");
     const raw = JSON.parse(content);
     const schemaVersion = raw.schemaVersion ?? 1;
     if (schemaVersion > SUPPORTED_SCHEMA_VERSION) {
@@ -2654,16 +2632,16 @@ async function updateSettings(updater) {
   let attempts = 0;
   while (attempts < MAX_LOCK_ATTEMPTS) {
     try {
-      fileHandle = await promises.open(lockFile, fs.constants.O_CREAT | fs.constants.O_EXCL | fs.constants.O_WRONLY);
+      fileHandle = await open(lockFile, constants.O_CREAT | constants.O_EXCL | constants.O_WRONLY);
       break;
     } catch (err) {
       if (err.code === "EEXIST") {
         attempts++;
         await new Promise((resolve) => setTimeout(resolve, LOCK_RETRY_INTERVAL_MS));
         try {
-          const stats = await promises.stat(lockFile);
+          const stats = await stat$1(lockFile);
           if (Date.now() - stats.mtimeMs > STALE_LOCK_TIMEOUT_MS) {
-            await promises.unlink(lockFile).catch(() => {
+            await unlink(lockFile).catch(() => {
             });
           }
         } catch {
@@ -2679,33 +2657,33 @@ async function updateSettings(updater) {
   try {
     const current = await readSettings() || { ...defaultSettings };
     const updated = await updater(current);
-    if (!fs.existsSync(configuration.happyHomeDir)) {
-      await promises.mkdir(configuration.happyHomeDir, { recursive: true });
+    if (!existsSync(configuration.happyHomeDir)) {
+      await mkdir(configuration.happyHomeDir, { recursive: true });
     }
-    await promises.writeFile(tmpFile, JSON.stringify(updated, null, 2));
-    await promises.rename(tmpFile, configuration.settingsFile);
+    await writeFile$1(tmpFile, JSON.stringify(updated, null, 2));
+    await rename(tmpFile, configuration.settingsFile);
     return updated;
   } finally {
     await fileHandle.close();
-    await promises.unlink(lockFile).catch(() => {
+    await unlink(lockFile).catch(() => {
     });
   }
 }
-const credentialsSchema = z__namespace.object({
-  token: z__namespace.string(),
-  secret: z__namespace.string().base64().nullish(),
+const credentialsSchema = z.object({
+  token: z.string(),
+  secret: z.string().base64().nullish(),
   // Legacy
-  encryption: z__namespace.object({
-    publicKey: z__namespace.string().base64(),
-    machineKey: z__namespace.string().base64()
+  encryption: z.object({
+    publicKey: z.string().base64(),
+    machineKey: z.string().base64()
   }).nullish()
 });
 async function readCredentials() {
-  if (!fs.existsSync(configuration.privateKeyFile)) {
+  if (!existsSync(configuration.privateKeyFile)) {
     return null;
   }
   try {
-    const keyBase64 = await promises.readFile(configuration.privateKeyFile, "utf8");
+    const keyBase64 = await readFile$1(configuration.privateKeyFile, "utf8");
     const credentials = credentialsSchema.parse(JSON.parse(keyBase64));
     if (credentials.secret) {
       return {
@@ -2731,26 +2709,26 @@ async function readCredentials() {
   return null;
 }
 async function writeCredentialsLegacy(credentials) {
-  if (!fs.existsSync(configuration.happyHomeDir)) {
-    await promises.mkdir(configuration.happyHomeDir, { recursive: true });
+  if (!existsSync(configuration.happyHomeDir)) {
+    await mkdir(configuration.happyHomeDir, { recursive: true });
   }
-  await promises.writeFile(configuration.privateKeyFile, JSON.stringify({
+  await writeFile$1(configuration.privateKeyFile, JSON.stringify({
     secret: encodeBase64(credentials.secret),
     token: credentials.token
   }, null, 2));
 }
 async function writeCredentialsDataKey(credentials) {
-  if (!fs.existsSync(configuration.happyHomeDir)) {
-    await promises.mkdir(configuration.happyHomeDir, { recursive: true });
+  if (!existsSync(configuration.happyHomeDir)) {
+    await mkdir(configuration.happyHomeDir, { recursive: true });
   }
-  await promises.writeFile(configuration.privateKeyFile, JSON.stringify({
+  await writeFile$1(configuration.privateKeyFile, JSON.stringify({
     encryption: { publicKey: encodeBase64(credentials.publicKey), machineKey: encodeBase64(credentials.machineKey) },
     token: credentials.token
   }, null, 2));
 }
 async function clearCredentials() {
-  if (fs.existsSync(configuration.privateKeyFile)) {
-    await promises.unlink(configuration.privateKeyFile);
+  if (existsSync(configuration.privateKeyFile)) {
+    await unlink(configuration.privateKeyFile);
   }
 }
 async function clearMachineId() {
@@ -2761,10 +2739,10 @@ async function clearMachineId() {
 }
 async function readDaemonState() {
   try {
-    if (!fs.existsSync(configuration.daemonStateFile)) {
+    if (!existsSync(configuration.daemonStateFile)) {
       return null;
     }
-    const content = await promises.readFile(configuration.daemonStateFile, "utf-8");
+    const content = await readFile$1(configuration.daemonStateFile, "utf-8");
     return JSON.parse(content);
   } catch (error) {
     console.error(`[PERSISTENCE] Daemon state file corrupted: ${configuration.daemonStateFile}`, error);
@@ -2772,15 +2750,15 @@ async function readDaemonState() {
   }
 }
 function writeDaemonState(state) {
-  fs.writeFileSync(configuration.daemonStateFile, JSON.stringify(state, null, 2), "utf-8");
+  writeFileSync(configuration.daemonStateFile, JSON.stringify(state, null, 2), "utf-8");
 }
 async function clearDaemonState() {
-  if (fs.existsSync(configuration.daemonStateFile)) {
-    await promises.unlink(configuration.daemonStateFile);
+  if (existsSync(configuration.daemonStateFile)) {
+    await unlink(configuration.daemonStateFile);
   }
-  if (fs.existsSync(configuration.daemonLockFile)) {
+  if (existsSync(configuration.daemonLockFile)) {
     try {
-      await promises.unlink(configuration.daemonLockFile);
+      await unlink(configuration.daemonLockFile);
     } catch {
     }
   }
@@ -2788,21 +2766,21 @@ async function clearDaemonState() {
 async function acquireDaemonLock(maxAttempts = 5, delayIncrementMs = 200) {
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      const fileHandle = await promises.open(
+      const fileHandle = await open(
         configuration.daemonLockFile,
-        fs.constants.O_CREAT | fs.constants.O_EXCL | fs.constants.O_WRONLY
+        constants.O_CREAT | constants.O_EXCL | constants.O_WRONLY
       );
       await fileHandle.writeFile(String(process.pid));
       return fileHandle;
     } catch (error) {
       if (error.code === "EEXIST") {
         try {
-          const lockPid = fs.readFileSync(configuration.daemonLockFile, "utf-8").trim();
+          const lockPid = readFileSync(configuration.daemonLockFile, "utf-8").trim();
           if (lockPid && !isNaN(Number(lockPid))) {
             try {
               process.kill(Number(lockPid), 0);
             } catch {
-              fs.unlinkSync(configuration.daemonLockFile);
+              unlinkSync(configuration.daemonLockFile);
               continue;
             }
           }
@@ -2824,8 +2802,8 @@ async function releaseDaemonLock(lockHandle) {
   } catch {
   }
   try {
-    if (fs.existsSync(configuration.daemonLockFile)) {
-      fs.unlinkSync(configuration.daemonLockFile);
+    if (existsSync(configuration.daemonLockFile)) {
+      unlinkSync(configuration.daemonLockFile);
     }
   } catch {
   }
@@ -2875,7 +2853,7 @@ async function openBrowser(url) {
       return false;
     }
     logger.debug(`[browser] Attempting to open URL: ${url}`);
-    await open(url);
+    await open$1(url);
     logger.debug("[browser] Browser opened successfully");
     return true;
   } catch (error) {
@@ -2885,7 +2863,7 @@ async function openBrowser(url) {
 }
 
 const AuthSelector = ({ onSelect, onCancel }) => {
-  const [selectedIndex, setSelectedIndex] = React.useState(0);
+  const [selectedIndex, setSelectedIndex] = useState(0);
   const options = [
     {
       method: "mobile",
@@ -2896,7 +2874,7 @@ const AuthSelector = ({ onSelect, onCancel }) => {
       label: "Web Browser"
     }
   ];
-  ink.useInput((input, key) => {
+  useInput((input, key) => {
     if (key.upArrow) {
       setSelectedIndex((prev) => Math.max(0, prev - 1));
     } else if (key.downArrow) {
@@ -2913,10 +2891,10 @@ const AuthSelector = ({ onSelect, onCancel }) => {
       onSelect("web");
     }
   });
-  return /* @__PURE__ */ React.createElement(ink.Box, { flexDirection: "column", paddingY: 1 }, /* @__PURE__ */ React.createElement(ink.Box, { marginBottom: 1 }, /* @__PURE__ */ React.createElement(ink.Text, null, "How would you like to authenticate?")), /* @__PURE__ */ React.createElement(ink.Box, { flexDirection: "column" }, options.map((option, index) => {
+  return /* @__PURE__ */ React.createElement(Box, { flexDirection: "column", paddingY: 1 }, /* @__PURE__ */ React.createElement(Box, { marginBottom: 1 }, /* @__PURE__ */ React.createElement(Text, null, "How would you like to authenticate?")), /* @__PURE__ */ React.createElement(Box, { flexDirection: "column" }, options.map((option, index) => {
     const isSelected = selectedIndex === index;
-    return /* @__PURE__ */ React.createElement(ink.Box, { key: option.method, marginY: 0 }, /* @__PURE__ */ React.createElement(ink.Text, { color: isSelected ? "cyan" : "gray" }, isSelected ? "\u203A " : "  ", index + 1, ". ", option.label));
-  })), /* @__PURE__ */ React.createElement(ink.Box, { marginTop: 1 }, /* @__PURE__ */ React.createElement(ink.Text, { dimColor: true }, "Use arrows or 1-2 to select, Enter to confirm")));
+    return /* @__PURE__ */ React.createElement(Box, { key: option.method, marginY: 0 }, /* @__PURE__ */ React.createElement(Text, { color: isSelected ? "cyan" : "gray" }, isSelected ? "\u203A " : "  ", index + 1, ". ", option.label));
+  })), /* @__PURE__ */ React.createElement(Box, { marginTop: 1 }, /* @__PURE__ */ React.createElement(Text, { dimColor: true }, "Use arrows or 1-2 to select, Enter to confirm")));
 };
 
 async function doAuth() {
@@ -2926,7 +2904,7 @@ async function doAuth() {
     console.log("\nAuthentication cancelled.\n");
     process.exit(0);
   }
-  const secret = new Uint8Array(node_crypto.randomBytes(32));
+  const secret = new Uint8Array(randomBytes(32));
   const keypair = tweetnacl.box.keyPair.fromSecretKey(secret);
   try {
     if (process.env.DEBUG) {
@@ -2970,7 +2948,7 @@ function selectAuthenticationMethod() {
         resolve(null);
       }
     };
-    const app = ink.render(React.createElement(AuthSelector, { onSelect, onCancel }), {
+    const app = render(React.createElement(AuthSelector, { onSelect, onCancel }), {
       exitOnCtrlC: false,
       patchConsole: false
     });
@@ -3044,7 +3022,7 @@ async function waitForAuthentication(keypair) {
               if (decrypted[0] === 0) {
                 const credentials = {
                   publicKey: decrypted.slice(1, 33),
-                  machineKey: node_crypto.randomBytes(32),
+                  machineKey: randomBytes(32),
                   token
                 };
                 await writeCredentialsDataKey(credentials);
@@ -3109,7 +3087,7 @@ async function authAndSetupMachineIfNeeded() {
     if (newAuth || !s.machineId) {
       return {
         ...s,
-        machineId: node_crypto.randomUUID()
+        machineId: randomUUID()
       };
     }
     return s;
@@ -3133,7 +3111,7 @@ function startCaffeinate() {
     return true;
   }
   try {
-    caffeinateProcess = child_process.spawn("caffeinate", ["-im"], {
+    caffeinateProcess = spawn("caffeinate", ["-im"], {
       stdio: "ignore",
       detached: false
     });
@@ -3288,8 +3266,8 @@ async function isDaemonRunningCurrentlyInstalledHappyVersion() {
     return false;
   }
   try {
-    const packageJsonPath = path.join(projectPath(), "package.json");
-    const packageJson = JSON.parse(fs$1.readFileSync(packageJsonPath, "utf-8"));
+    const packageJsonPath = join$1(projectPath(), "package.json");
+    const packageJson = JSON.parse(readFileSync$1(packageJsonPath, "utf-8"));
     const currentCliVersion = packageJson.version;
     logger.debug(`[DAEMON CONTROL] Current CLI version: ${currentCliVersion}, Daemon started with version: ${state.startedWithCliVersion}`);
     return currentCliVersion === state.startedWithCliVersion;
@@ -3391,7 +3369,7 @@ async function killRunawayHappyProcesses() {
     try {
       console.log(`Killing runaway process PID ${pid}: ${command}`);
       if (process.platform === "win32") {
-        const result = spawn.sync("taskkill", ["/F", "/PID", pid.toString()], { stdio: "pipe" });
+        const result = spawn$1.sync("taskkill", ["/F", "/PID", pid.toString()], { stdio: "pipe" });
         if (result.error) throw result.error;
         if (result.status !== 0) throw new Error(`taskkill exited with code ${result.status}`);
       } else {
@@ -3440,13 +3418,13 @@ function getEnvironmentInfo() {
   };
 }
 function getLogFiles(logDir) {
-  if (!fs.existsSync(logDir)) {
+  if (!existsSync(logDir)) {
     return [];
   }
   try {
-    return fs.readdirSync(logDir).filter((file) => file.endsWith(".log")).map((file) => {
-      const path = node_path.join(logDir, file);
-      const stats = fs.statSync(path);
+    return readdirSync(logDir).filter((file) => file.endsWith(".log")).map((file) => {
+      const path = join(logDir, file);
+      const stats = statSync(path);
       return { file, path, modified: stats.mtime };
     }).sort((a, b) => b.modified.getTime() - a.modified.getTime());
   } catch {
@@ -3466,13 +3444,13 @@ async function runDoctorCommand(filter) {
     console.log("");
     console.log(chalk.bold("\u{1F527} Daemon Spawn Diagnostics"));
     const projectRoot = projectPath();
-    const wrapperPath = node_path.join(projectRoot, "bin", "happy.mjs");
-    const cliEntrypoint = node_path.join(projectRoot, "dist", "index.mjs");
+    const wrapperPath = join(projectRoot, "bin", "happy.mjs");
+    const cliEntrypoint = join(projectRoot, "dist", "index.mjs");
     console.log(`Project Root: ${chalk.blue(projectRoot)}`);
     console.log(`Wrapper Script: ${chalk.blue(wrapperPath)}`);
     console.log(`CLI Entrypoint: ${chalk.blue(cliEntrypoint)}`);
-    console.log(`Wrapper Exists: ${fs.existsSync(wrapperPath) ? chalk.green("\u2713 Yes") : chalk.red("\u274C No")}`);
-    console.log(`CLI Exists: ${fs.existsSync(cliEntrypoint) ? chalk.green("\u2713 Yes") : chalk.red("\u274C No")}`);
+    console.log(`Wrapper Exists: ${existsSync(wrapperPath) ? chalk.green("\u2713 Yes") : chalk.red("\u274C No")}`);
+    console.log(`CLI Exists: ${existsSync(cliEntrypoint) ? chalk.green("\u2713 Yes") : chalk.red("\u274C No")}`);
     console.log("");
     console.log(chalk.bold("\u2699\uFE0F  Configuration"));
     console.log(`Happy Home: ${chalk.blue(configuration.happyHomeDir)}`);
@@ -3609,7 +3587,7 @@ ${typeLabels[type] || type}:`));
 
 function spawnHappyCLI(args, options = {}) {
   const projectRoot = projectPath();
-  const entrypoint = node_path.join(projectRoot, "dist", "index.mjs");
+  const entrypoint = join(projectRoot, "dist", "index.mjs");
   let directory;
   if ("cwd" in options) {
     directory = options.cwd;
@@ -3624,13 +3602,13 @@ function spawnHappyCLI(args, options = {}) {
     entrypoint,
     ...args
   ];
-  if (!fs.existsSync(entrypoint)) {
+  if (!existsSync(entrypoint)) {
     const errorMessage = `Entrypoint ${entrypoint} does not exist`;
     logger.debug(`[SPAWN HAPPY CLI] ${errorMessage}`);
     throw new Error(errorMessage);
   }
   const runtime = isBun() ? "bun" : "node";
-  return child_process.spawn(runtime, nodeArgs, options);
+  return spawn(runtime, nodeArgs, options);
 }
 
 function startDaemonControlServer({
@@ -3645,19 +3623,19 @@ function startDaemonControlServer({
       logger: false
       // We use our own logger
     });
-    app.setValidatorCompiler(fastifyTypeProviderZod.validatorCompiler);
-    app.setSerializerCompiler(fastifyTypeProviderZod.serializerCompiler);
+    app.setValidatorCompiler(validatorCompiler);
+    app.setSerializerCompiler(serializerCompiler);
     const typed = app.withTypeProvider();
     typed.post("/session-started", {
       schema: {
-        body: z.z.object({
-          sessionId: z.z.string(),
-          metadata: z.z.any()
+        body: z$1.object({
+          sessionId: z$1.string(),
+          metadata: z$1.any()
           // Metadata type from API
         }),
         response: {
-          200: z.z.object({
-            status: z.z.literal("ok")
+          200: z$1.object({
+            status: z$1.literal("ok")
           })
         }
       }
@@ -3670,11 +3648,11 @@ function startDaemonControlServer({
     typed.post("/list", {
       schema: {
         response: {
-          200: z.z.object({
-            children: z.z.array(z.z.object({
-              startedBy: z.z.string(),
-              happySessionId: z.z.string(),
-              pid: z.z.number()
+          200: z$1.object({
+            children: z$1.array(z$1.object({
+              startedBy: z$1.string(),
+              happySessionId: z$1.string(),
+              pid: z$1.number()
             }))
           })
         }
@@ -3692,12 +3670,12 @@ function startDaemonControlServer({
     });
     typed.post("/stop-session", {
       schema: {
-        body: z.z.object({
-          sessionId: z.z.string()
+        body: z$1.object({
+          sessionId: z$1.string()
         }),
         response: {
-          200: z.z.object({
-            success: z.z.boolean()
+          200: z$1.object({
+            success: z$1.boolean()
           })
         }
       }
@@ -3709,25 +3687,25 @@ function startDaemonControlServer({
     });
     typed.post("/spawn-session", {
       schema: {
-        body: z.z.object({
-          directory: z.z.string(),
-          sessionId: z.z.string().optional()
+        body: z$1.object({
+          directory: z$1.string(),
+          sessionId: z$1.string().optional()
         }),
         response: {
-          200: z.z.object({
-            success: z.z.boolean(),
-            sessionId: z.z.string().optional(),
-            approvedNewDirectoryCreation: z.z.boolean().optional()
+          200: z$1.object({
+            success: z$1.boolean(),
+            sessionId: z$1.string().optional(),
+            approvedNewDirectoryCreation: z$1.boolean().optional()
           }),
-          409: z.z.object({
-            success: z.z.boolean(),
-            requiresUserApproval: z.z.boolean().optional(),
-            actionRequired: z.z.string().optional(),
-            directory: z.z.string().optional()
+          409: z$1.object({
+            success: z$1.boolean(),
+            requiresUserApproval: z$1.boolean().optional(),
+            actionRequired: z$1.string().optional(),
+            directory: z$1.string().optional()
           }),
-          500: z.z.object({
-            success: z.z.boolean(),
-            error: z.z.string().optional()
+          500: z$1.object({
+            success: z$1.boolean(),
+            error: z$1.string().optional()
           })
         }
       }
@@ -3768,8 +3746,8 @@ function startDaemonControlServer({
     typed.post("/stop", {
       schema: {
         response: {
-          200: z.z.object({
-            status: z.z.string()
+          200: z$1.object({
+            status: z$1.string()
           })
         }
       }
@@ -4090,7 +4068,7 @@ class TmuxUtilities {
    */
   runCommand(args, options = {}) {
     return new Promise((resolve, reject) => {
-      const child = child_process.spawn(args[0], args.slice(1), {
+      const child = spawn(args[0], args.slice(1), {
         stdio: ["ignore", "pipe", "pipe"],
         timeout: 5e3,
         shell: false,
@@ -4466,10 +4444,10 @@ function expandEnvironmentVariables(envVars, sourceEnv = process.env) {
 }
 
 const initialMachineMetadata = {
-  host: os$1.hostname(),
-  platform: os$1.platform(),
+  host: os.hostname(),
+  platform: os.platform(),
   happyCliVersion: packageJson.version,
-  homeDir: os$1.homedir(),
+  homeDir: os.homedir(),
   happyHomeDir: configuration.happyHomeDir,
   happyLibDir: projectPath()
 };
@@ -4594,7 +4572,7 @@ async function startDaemon() {
       const { directory, sessionId, machineId: machineId2, approvedNewDirectoryCreation = true } = options;
       let directoryCreated = false;
       try {
-        await fs$2.access(directory);
+        await fs.access(directory);
         logger.debug(`[DAEMON RUN] Directory exists: ${directory}`);
       } catch (error) {
         logger.debug(`[DAEMON RUN] Directory doesn't exist, creating: ${directory}`);
@@ -4606,7 +4584,7 @@ async function startDaemon() {
           };
         }
         try {
-          await fs$2.mkdir(directory, { recursive: true });
+          await fs.mkdir(directory, { recursive: true });
           logger.debug(`[DAEMON RUN] Successfully created directory: ${directory}`);
           directoryCreated = true;
         } catch (mkdirError) {
@@ -4633,8 +4611,8 @@ async function startDaemon() {
         const authEnv = {};
         if (options.token) {
           if (options.agent === "codex") {
-            const codexHomeDir = tmp__namespace.dirSync();
-            fs$2.writeFile(path.join(codexHomeDir.name, "auth.json"), options.token);
+            const codexHomeDir = tmp.dirSync();
+            fs.writeFile(join$1(codexHomeDir.name, "auth.json"), options.token);
             authEnv.CODEX_HOME = codexHomeDir.name;
           } else {
             authEnv.CLAUDE_CODE_OAUTH_TOKEN = options.token;
@@ -4699,7 +4677,7 @@ async function startDaemon() {
           const sessionDesc = tmuxSessionName || "current/most recent session";
           logger.debug(`[DAEMON RUN] Attempting to spawn session in tmux: ${sessionDesc}`);
           const tmux = getTmuxUtilities(tmuxSessionName);
-          const cliPath = path.join(projectPath(), "dist", "index.mjs");
+          const cliPath = join$1(projectPath(), "dist", "index.mjs");
           const agent = options.agent === "gemini" ? "gemini" : options.agent === "codex" ? "codex" : "claude";
           const fullCommand = `node --no-warnings --no-deprecation ${cliPath} ${agent} --happy-starting-mode remote --started-by daemon`;
           const windowName = `happy-${Date.now()}-${agent}`;
@@ -4945,7 +4923,7 @@ async function startDaemon() {
           pidToTrackedSession.delete(pid);
         }
       }
-      const projectVersion = JSON.parse(fs$1.readFileSync(path.join(projectPath(), "package.json"), "utf-8")).version;
+      const projectVersion = JSON.parse(readFileSync$1(join$1(projectPath(), "package.json"), "utf-8")).version;
       if (projectVersion !== configuration.currentCliVersion) {
         logger.debug("[DAEMON RUN] Daemon is outdated, triggering self-restart with latest version, clearing heartbeat interval");
         clearInterval(restartOnStaleVersionAndHeartbeat);
@@ -5346,7 +5324,7 @@ function deterministicStringify(obj, options = {}) {
 }
 function hashObject(obj, options, encoding = "hex") {
   const jsonString = deterministicStringify(obj, options);
-  return crypto.createHash("sha256").update(jsonString).digest(encoding);
+  return createHash("sha256").update(jsonString).digest(encoding);
 }
 
 async function startHappyServer(client, options) {
@@ -5356,14 +5334,14 @@ async function startHappyServer(client, options) {
       client.sendClaudeSessionMessage({
         type: "summary",
         summary: title,
-        leafUuid: node_crypto.randomUUID()
+        leafUuid: randomUUID()
       });
       return { success: true };
     } catch (error) {
       return { success: false, error: String(error) };
     }
   };
-  const mcp = new mcp_js.McpServer({
+  const mcp = new McpServer({
     name: "Happy MCP",
     version: "1.0.0"
   });
@@ -5371,7 +5349,7 @@ async function startHappyServer(client, options) {
     description: "Change the title of the current chat session",
     title: "Change Chat Title",
     inputSchema: {
-      title: z.z.string().describe("The new title for the chat session")
+      title: z$1.string().describe("The new title for the chat session")
     }
   }, async (args) => {
     const response = await handler(args.title);
@@ -5398,13 +5376,13 @@ async function startHappyServer(client, options) {
       };
     }
   });
-  const transport = new streamableHttp_js.StreamableHTTPServerTransport({
+  const transport = new StreamableHTTPServerTransport({
     // NOTE: Returning session id here will result in claude
     // sdk spawn to fail with `Invalid Request: Server already initialized`
     sessionIdGenerator: void 0
   });
   await mcp.connect(transport);
-  const server = node_http.createServer(async (req, res) => {
+  const server = createServer(async (req, res) => {
     if (req.method === "POST" && req.url === "/a2a/message" && options?.onA2aMessage) {
       try {
         const chunks = [];
@@ -5478,43 +5456,4 @@ function registerKillSessionHandler(rpcHandlerManager, killThisHappy) {
   });
 }
 
-exports.ApiClient = ApiClient;
-exports.ApiSessionClient = ApiSessionClient;
-exports.AsyncLock = AsyncLock;
-exports.MessageQueue2 = MessageQueue2;
-exports.RawJSONLinesSchema = RawJSONLinesSchema;
-exports.api = api;
-exports.authAndSetupMachineIfNeeded = authAndSetupMachineIfNeeded;
-exports.backoff = backoff;
-exports.checkIfDaemonRunningAndCleanupStaleState = checkIfDaemonRunningAndCleanupStaleState;
-exports.clearCredentials = clearCredentials;
-exports.clearMachineId = clearMachineId;
-exports.configuration = configuration;
-exports.connectionState = connectionState;
-exports.delay = delay;
-exports.getEnvironmentInfo = getEnvironmentInfo;
-exports.getLatestDaemonLog = getLatestDaemonLog;
-exports.hashObject = hashObject;
-exports.initialMachineMetadata = initialMachineMetadata;
-exports.isBun = isBun;
-exports.isDaemonRunningCurrentlyInstalledHappyVersion = isDaemonRunningCurrentlyInstalledHappyVersion;
-exports.killRunawayHappyProcesses = killRunawayHappyProcesses;
-exports.listDaemonSessions = listDaemonSessions;
-exports.logger = logger;
-exports.notifyDaemonSessionStarted = notifyDaemonSessionStarted;
-exports.openBrowser = openBrowser;
-exports.packageJson = packageJson;
-exports.persistence = persistence;
-exports.projectPath = projectPath;
-exports.readCredentials = readCredentials;
-exports.readSettings = readSettings;
-exports.registerKillSessionHandler = registerKillSessionHandler;
-exports.runDoctorCommand = runDoctorCommand;
-exports.spawnHappyCLI = spawnHappyCLI;
-exports.startCaffeinate = startCaffeinate;
-exports.startDaemon = startDaemon;
-exports.startHappyServer = startHappyServer;
-exports.startOfflineReconnection = startOfflineReconnection;
-exports.stopCaffeinate = stopCaffeinate;
-exports.stopDaemon = stopDaemon;
-exports.stopDaemonSession = stopDaemonSession;
+export { ApiClient as A, openBrowser as B, killRunawayHappyProcesses as C, runDoctorCommand as D, isDaemonRunningCurrentlyInstalledHappyVersion as E, spawnHappyCLI as F, listDaemonSessions as G, stopDaemonSession as H, startDaemon as I, getLatestDaemonLog as J, api as K, persistence as L, MessageQueue2 as M, RawJSONLinesSchema as R, ApiSessionClient as a, readSettings as b, configuration as c, registerKillSessionHandler as d, stopCaffeinate as e, connectionState as f, packageJson as g, hashObject as h, initialMachineMetadata as i, startOfflineReconnection as j, delay as k, logger as l, backoff as m, notifyDaemonSessionStarted as n, isBun as o, projectPath as p, AsyncLock as q, readCredentials as r, startHappyServer as s, getEnvironmentInfo as t, startCaffeinate as u, checkIfDaemonRunningAndCleanupStaleState as v, stopDaemon as w, clearCredentials as x, clearMachineId as y, authAndSetupMachineIfNeeded as z };

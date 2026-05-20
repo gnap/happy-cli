@@ -501,7 +501,7 @@ export class ApiSessionClient extends EventEmitter {
         }
         const content = {
             role: 'session',
-            content: { type: 'session', data: envelope },
+            content: envelope,
             meta: { sentFrom: 'cli' },
         };
         const encrypted = encodeBase64(encrypt(this.encryptionKey, this.encryptionVariant, content));
