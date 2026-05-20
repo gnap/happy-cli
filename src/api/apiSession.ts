@@ -396,7 +396,7 @@ export class ApiSessionClient extends EventEmitter {
         costUsd?: number; durationMs?: number;
     }): void {
         if (!this.socket.connected) return;
-        const usageReport = {
+        const report = {
             key: 'cursor-session',
             sessionId: this.sessionId,
             tokens: {
@@ -406,12 +406,17 @@ export class ApiSessionClient extends EventEmitter {
                 cache_creation: fields.cacheCreationInputTokens ?? 0,
                 cache_read: fields.cacheReadInputTokens ?? 0,
             },
+            cost: {
+                total: fields.costUsd ?? 0,
+                input: 0,
+                output: 0,
+            },
             costUsd: fields.costUsd,
             durationMs: fields.durationMs,
             contextSize: fields.contextSize,
         };
-        logger.debugLargeJson('[SOCKET] Sending cursor usage data:', usageReport);
-        this.socket.emit('usage-report', usageReport);
+        logger.debugLargeJson('[SOCKET] Sending cursor usage data:', report);
+        this.socket.emit('usage-report', report);
     }
 
     /**
