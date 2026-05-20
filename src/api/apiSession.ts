@@ -385,6 +385,36 @@ export class ApiSessionClient extends EventEmitter {
     }
 
     /**
+     * Send cursor-agent usage data to the server.
+     * Accepts the normalized cursor usage format (camelCase fields)
+     * and converts to the usage-report shape the App expects.
+     */
+    sendCursorUsageData(fields: {
+        inputTokens?: number; outputTokens?: number;
+        cacheReadInputTokens?: number; cacheCreationInputTokens?: number;
+        totalTokens?: number; contextSize?: number;
+        costUsd?: number; durationMs?: number;
+    }): void {
+        if (!this.socket.connected) return;
+        const usageReport = {
+            key: 'cursor-session',
+            sessionId: this.sessionId,
+            tokens: {
+                total: fields.totalTokens ?? 0,
+                input: fields.inputTokens ?? 0,
+                output: fields.outputTokens ?? 0,
+                cache_creation: fields.cacheCreationInputTokens ?? 0,
+                cache_read: fields.cacheReadInputTokens ?? 0,
+            },
+            costUsd: fields.costUsd,
+            durationMs: fields.durationMs,
+            contextSize: fields.contextSize,
+        };
+        logger.debugLargeJson('[SOCKET] Sending cursor usage data:', usageReport);
+        this.socket.emit('usage-report', usageReport);
+    }
+
+    /**
      * Update session metadata
      * @param handler - Handler function that returns the updated metadata
      */
