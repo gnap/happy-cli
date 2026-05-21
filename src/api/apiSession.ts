@@ -10,7 +10,6 @@ import { randomUUID } from 'node:crypto';
 import { AsyncLock } from '@/utils/lock';
 import { RpcHandlerManager } from './rpc/RpcHandlerManager';
 import { registerCommonHandlers } from '../modules/common/registerCommonHandlers';
-import axios from 'axios';
 
 /**
  * ACP (Agent Communication Protocol) message data types.
@@ -386,41 +385,6 @@ export class ApiSessionClient extends EventEmitter {
     }
 
     /**
-     * Send cursor-agent usage data to the server.
-     * Accepts the normalized cursor usage format (camelCase fields)
-     * and converts to the usage-report shape the App expects.
-     */
-    sendCursorUsageData(fields: {
-        inputTokens?: number; outputTokens?: number;
-        cacheReadInputTokens?: number; cacheCreationInputTokens?: number;
-        totalTokens?: number; contextSize?: number;
-        costUsd?: number; durationMs?: number;
-    }): void {
-        if (!this.socket.connected) return;
-        const report = {
-            key: 'cursor-session',
-            sessionId: this.sessionId,
-            tokens: {
-                total: fields.totalTokens ?? 0,
-                input: fields.inputTokens ?? 0,
-                output: fields.outputTokens ?? 0,
-                cache_creation: fields.cacheCreationInputTokens ?? 0,
-                cache_read: fields.cacheReadInputTokens ?? 0,
-            },
-            cost: {
-                total: fields.costUsd ?? 0,
-                input: 0,
-                output: 0,
-            },
-            costUsd: fields.costUsd,
-            durationMs: fields.durationMs,
-            contextSize: fields.contextSize,
-        };
-        logger.debugLargeJson('[SOCKET] Sending cursor usage data:', report);
-        this.socket.emit('usage-report', report);
-    }
-
-    /**
      * Update session metadata
      * @param handler - Handler function that returns the updated metadata
      */
@@ -477,73 +441,17 @@ export class ApiSessionClient extends EventEmitter {
      * Wait for socket buffer to flush
      */
     async flush(): Promise<void> {
-        // Flush pending outbox via HTTP (matches happy reference)
-        if (this._pendingOutbox.length > 0) {
-            console.error(`[API] flushOutbox: ${this._pendingOutbox.length} messages`);
+        if (!this.socket.connected) {
+            return;
         }
-        while (this._pendingOutbox.length > 0) {
-            const batch = this._pendingOutbox.splice(0, ApiSessionClient.MAX_BATCH_SIZE);
-            try {
-                await axios.post(
-                    `${configuration.serverUrl}/v3/sessions/${encodeURIComponent(this.sessionId)}/messages`,
-                    { messages: batch.map(m => ({ content: m.encrypted, localId: m.localId })) },
-                    {
-                        headers: { Authorization: `Bearer ${this.token}` },
-                        timeout: 30000,
-                    },
-                );
-                console.error(`[API] flushOutbox: sent ${batch.length} ok`);
-            } catch(e: any) {
-                console.error(`[API] flushOutbox error: ${e?.message || e}`);
-                // Re-queue on failure for next flush
-                this._pendingOutbox.unshift(...batch);
-                break;
-            }
-        }
-        // Also wait for socket ack
-        if (this.socket.connected) {
-            return new Promise((resolve) => {
-                this.socket.emit('ping', () => resolve());
-                setTimeout(() => resolve(), 5000);
+        return new Promise((resolve) => {
+            this.socket.emit('ping', () => {
+                resolve();
             });
-        }
-    }
-
-    /**
-     * Send a session protocol envelope to the server (cursor-agent support).
-     * Wraps the envelope in the format expected by the App and emits via WebSocket.
-     */
-    private _pendingOutbox: Array<{ localId: string; encrypted: string }> = [];
-    private static MAX_BATCH_SIZE = 20;
-
-    private _enqueue(encrypted: string, localId: string): void {
-        this._pendingOutbox.push({ localId: localId ?? '', encrypted });
-    }
-
-    sendSessionProtocolMessage(envelope: { id?: string; role: string; ev: Record<string, unknown>; meta?: Record<string, unknown> }): void {
-        console.error(`[API] sendSessionProtocolMessage ev.t=${(envelope.ev as any)?.t} connected=${this.socket.connected}`);
-        const content = {
-            role: 'session',
-            content: envelope,
-            meta: { sentFrom: 'cli' },
-        };
-        const encrypted = encodeBase64(encrypt(this.encryptionKey, this.encryptionVariant, content));
-        this._enqueue(encrypted, envelope.id || '');
-    }
-
-    /**
-     * Send a turn-end / turn-start lifecycle envelope.
-     * Same shape as sendSessionProtocolMessage so the App's timer stops correctly.
-     */
-    sendSessionLifecycleEnvelope(envelope: { id?: string; role: string; ev: Record<string, unknown>; meta?: Record<string, unknown> }): void {
-        console.error(`[API] sendSessionLifecycleEnvelope ev.t=${(envelope.ev as any)?.t}`);
-        const content = {
-            role: 'session',
-            content: { type: 'session', data: envelope },
-            meta: { sentFrom: 'cli' },
-        };
-        const encrypted = encodeBase64(encrypt(this.encryptionKey, this.encryptionVariant, content));
-        this._enqueue(encrypted, envelope.id || '');
+            setTimeout(() => {
+                resolve();
+            }, 10000);
+        });
     }
 
     async close() {

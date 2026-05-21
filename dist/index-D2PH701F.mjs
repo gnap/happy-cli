@@ -1,37 +1,34 @@
-'use strict';
+import{createRequire as _pkgrollCR}from"node:module";const require=_pkgrollCR(import.meta.url);import chalk from 'chalk';
+import os, { homedir } from 'node:os';
+import { randomUUID } from 'node:crypto';
+import { l as logger, p as projectPath, u as backoff, t as delay, R as RawJSONLinesSchema, v as isBun, w as AsyncLock, f as configuration, x as getEnvironmentInfo, m as connectionState, A as ApiClient, g as readSettings, i as initialMachineMetadata, o as packageJson, q as startOfflineReconnection, k as stopCaffeinate, n as notifyDaemonSessionStarted, s as startHappyServer, y as startCaffeinate, M as MessageQueue2, h as hashObject, j as registerKillSessionHandler, r as readCredentials, z as checkIfDaemonRunningAndCleanupStaleState, B as stopDaemon, C as clearCredentials, D as clearMachineId, E as authAndSetupMachineIfNeeded, F as openBrowser, G as killRunawayHappyProcesses, H as runDoctorCommand, I as isDaemonRunningCurrentlyInstalledHappyVersion, J as spawnHappyCLI, K as listDaemonSessions, L as stopDaemonSession, N as startDaemon, O as getLatestDaemonLog } from './registerKillSessionHandler-CWDCUs8P.mjs';
+import { spawn, execSync, execFileSync } from 'node:child_process';
+import { resolve, join } from 'node:path';
+import { createInterface } from 'node:readline';
+import { existsSync, readFileSync, readdirSync, statSync, mkdirSync, writeFileSync, unlinkSync, rmSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
+import { watch, access } from 'fs/promises';
+import { useStdout, useInput, Box, Text, render } from 'ink';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { fileURLToPath } from 'node:url';
+import 'axios';
+import 'node:events';
+import 'socket.io-client';
+import 'tweetnacl';
+import 'expo-server-sdk';
+import { randomBytes, createHash } from 'crypto';
+import '@modelcontextprotocol/sdk/server/mcp.js';
+import { createServer } from 'node:http';
+import '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import { z } from 'zod';
+import { existsSync as existsSync$1, writeFileSync as writeFileSync$1, chmodSync, unlinkSync as unlinkSync$1, mkdirSync as mkdirSync$1 } from 'fs';
+import { join as join$1 } from 'path';
+import { execSync as execSync$1, exec } from 'child_process';
+import { isDeepStrictEqual } from 'node:util';
+import os$1, { homedir as homedir$1 } from 'os';
+import { createServer as createServer$1 } from 'http';
+import { promisify } from 'util';
 
-var chalk = require('chalk');
-var os = require('node:os');
-var node_crypto = require('node:crypto');
-var api = require('./registerKillSessionHandler-DvMk4CwC.cjs');
-var node_child_process = require('node:child_process');
-var node_path = require('node:path');
-var node_readline = require('node:readline');
-var fs = require('node:fs');
-var promises = require('node:fs/promises');
-var fs$1 = require('fs/promises');
-var ink = require('ink');
-var React = require('react');
-var node_url = require('node:url');
-require('axios');
-require('node:events');
-require('socket.io-client');
-require('tweetnacl');
-require('expo-server-sdk');
-var crypto = require('crypto');
-require('@modelcontextprotocol/sdk/server/mcp.js');
-var node_http = require('node:http');
-require('@modelcontextprotocol/sdk/server/streamableHttp.js');
-var z = require('zod');
-var fs$2 = require('fs');
-var path = require('path');
-var child_process = require('child_process');
-var node_util = require('node:util');
-var os$1 = require('os');
-var http = require('http');
-var util = require('util');
-
-var _documentCurrentScript = typeof document !== 'undefined' ? document.currentScript : null;
 class Session {
   path;
   logPath;
@@ -80,7 +77,7 @@ class Session {
   cleanup = () => {
     clearInterval(this.keepAliveInterval);
     this.sessionFoundCallbacks = [];
-    api.logger.debug("[Session] Cleaned up resources");
+    logger.debug("[Session] Cleaned up resources");
   };
   onThinkingChange = (thinking) => {
     this.thinking = thinking;
@@ -108,7 +105,7 @@ class Session {
       ...metadata,
       claudeSessionId: sessionId
     }));
-    api.logger.debug(`[Session] Claude Code session ID ${sessionId} added to metadata`);
+    logger.debug(`[Session] Claude Code session ID ${sessionId} added to metadata`);
     for (const callback of this.sessionFoundCallbacks) {
       callback(sessionId);
     }
@@ -133,7 +130,7 @@ class Session {
    */
   clearSessionId = () => {
     this.sessionId = null;
-    api.logger.debug("[Session] Session ID cleared");
+    logger.debug("[Session] Session ID cleared");
   };
   /**
    * Consume one-time Claude flags from claudeArgs after Claude spawn
@@ -145,7 +142,7 @@ class Session {
     for (let i = 0; i < this.claudeArgs.length; i++) {
       const arg = this.claudeArgs[i];
       if (arg === "--continue") {
-        api.logger.debug("[Session] Consumed --continue flag");
+        logger.debug("[Session] Consumed --continue flag");
         continue;
       }
       if (arg === "--resume") {
@@ -153,37 +150,37 @@ class Session {
           const nextArg = this.claudeArgs[i + 1];
           if (!nextArg.startsWith("-") && nextArg.includes("-")) {
             i++;
-            api.logger.debug(`[Session] Consumed --resume flag with session ID: ${nextArg}`);
+            logger.debug(`[Session] Consumed --resume flag with session ID: ${nextArg}`);
           } else {
-            api.logger.debug("[Session] Consumed --resume flag (no session ID)");
+            logger.debug("[Session] Consumed --resume flag (no session ID)");
           }
         } else {
-          api.logger.debug("[Session] Consumed --resume flag (no session ID)");
+          logger.debug("[Session] Consumed --resume flag (no session ID)");
         }
         continue;
       }
       filteredArgs.push(arg);
     }
     this.claudeArgs = filteredArgs.length > 0 ? filteredArgs : void 0;
-    api.logger.debug(`[Session] Consumed one-time flags, remaining args:`, this.claudeArgs);
+    logger.debug(`[Session] Consumed one-time flags, remaining args:`, this.claudeArgs);
   };
 }
 
 function getProjectPath(workingDirectory) {
-  const projectId = node_path.resolve(workingDirectory).replace(/[\\\/\.: _]/g, "-");
-  const claudeConfigDir = process.env.CLAUDE_CONFIG_DIR || node_path.join(os.homedir(), ".claude");
-  return node_path.join(claudeConfigDir, "projects", projectId);
+  const projectId = resolve(workingDirectory).replace(/[\\\/\.: _]/g, "-");
+  const claudeConfigDir = process.env.CLAUDE_CONFIG_DIR || join(homedir(), ".claude");
+  return join(claudeConfigDir, "projects", projectId);
 }
 
 function claudeCheckSession(sessionId, path) {
   const projectDir = getProjectPath(path);
-  const sessionFile = node_path.join(projectDir, `${sessionId}.jsonl`);
-  const sessionExists = fs.existsSync(sessionFile);
+  const sessionFile = join(projectDir, `${sessionId}.jsonl`);
+  const sessionExists = existsSync(sessionFile);
   if (!sessionExists) {
-    api.logger.debug(`[claudeCheckSession] Path ${sessionFile} does not exist`);
+    logger.debug(`[claudeCheckSession] Path ${sessionFile} does not exist`);
     return false;
   }
-  const sessionData = fs.readFileSync(sessionFile, "utf-8").split("\n");
+  const sessionData = readFileSync(sessionFile, "utf-8").split("\n");
   const hasGoodMessage = !!sessionData.find((v, index) => {
     if (!v.trim()) return false;
     try {
@@ -192,11 +189,11 @@ function claudeCheckSession(sessionId, path) {
       typeof parsed.messageId === "string" && parsed.messageId.length > 0 || // Older Claude Code
       typeof parsed.leafUuid === "string" && parsed.leafUuid.length > 0;
     } catch (e) {
-      api.logger.debug(`[claudeCheckSession] Malformed JSON at line ${index + 1}:`, e);
+      logger.debug(`[claudeCheckSession] Malformed JSON at line ${index + 1}:`, e);
       return false;
     }
   });
-  api.logger.debug(`[claudeCheckSession] Session ${sessionId}: ${hasGoodMessage ? "valid" : "invalid"}`);
+  logger.debug(`[claudeCheckSession] Session ${sessionId}: ${hasGoodMessage ? "valid" : "invalid"}`);
   return hasGoodMessage;
 }
 
@@ -204,7 +201,7 @@ function claudeFindLastSession(workingDirectory) {
   try {
     const projectDir = getProjectPath(workingDirectory);
     const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    const files = fs.readdirSync(projectDir).filter((f) => f.endsWith(".jsonl")).map((f) => {
+    const files = readdirSync(projectDir).filter((f) => f.endsWith(".jsonl")).map((f) => {
       const sessionId = f.replace(".jsonl", "");
       if (!uuidPattern.test(sessionId)) {
         return null;
@@ -213,14 +210,14 @@ function claudeFindLastSession(workingDirectory) {
         return {
           name: f,
           sessionId,
-          mtime: fs.statSync(node_path.join(projectDir, f)).mtime.getTime()
+          mtime: statSync(join(projectDir, f)).mtime.getTime()
         };
       }
       return null;
     }).filter((f) => f !== null).sort((a, b) => b.mtime - a.mtime);
     return files.length > 0 ? files[0].sessionId : null;
   } catch (e) {
-    api.logger.debug("[claudeFindLastSession] Error finding sessions:", e);
+    logger.debug("[claudeFindLastSession] Error finding sessions:", e);
     return null;
   }
 }
@@ -245,23 +242,23 @@ function trimIdent(text) {
 }
 
 function getClaudeSettingsPath() {
-  const claudeConfigDir = process.env.CLAUDE_CONFIG_DIR || node_path.join(os.homedir(), ".claude");
-  return node_path.join(claudeConfigDir, "settings.json");
+  const claudeConfigDir = process.env.CLAUDE_CONFIG_DIR || join(homedir(), ".claude");
+  return join(claudeConfigDir, "settings.json");
 }
 function readClaudeSettings() {
   try {
     const settingsPath = getClaudeSettingsPath();
-    if (!fs.existsSync(settingsPath)) {
-      api.logger.debug(`[ClaudeSettings] No Claude settings file found at ${settingsPath}`);
+    if (!existsSync(settingsPath)) {
+      logger.debug(`[ClaudeSettings] No Claude settings file found at ${settingsPath}`);
       return null;
     }
-    const settingsContent = fs.readFileSync(settingsPath, "utf-8");
+    const settingsContent = readFileSync(settingsPath, "utf-8");
     const settings = JSON.parse(settingsContent);
-    api.logger.debug(`[ClaudeSettings] Successfully read Claude settings from ${settingsPath}`);
-    api.logger.debug(`[ClaudeSettings] includeCoAuthoredBy: ${settings.includeCoAuthoredBy}`);
+    logger.debug(`[ClaudeSettings] Successfully read Claude settings from ${settingsPath}`);
+    logger.debug(`[ClaudeSettings] includeCoAuthoredBy: ${settings.includeCoAuthoredBy}`);
     return settings;
   } catch (error) {
-    api.logger.debug(`[ClaudeSettings] Error reading Claude settings: ${error}`);
+    logger.debug(`[ClaudeSettings] Error reading Claude settings: ${error}`);
     return null;
   }
 }
@@ -296,10 +293,10 @@ const systemPrompt = (() => {
   }
 })();
 
-const claudeCliPath = node_path.resolve(node_path.join(api.projectPath(), "scripts", "claude_local_launcher.cjs"));
+const claudeCliPath = resolve(join(projectPath(), "scripts", "claude_local_launcher.cjs"));
 async function claudeLocal(opts) {
   const projectDir = getProjectPath(opts.path);
-  fs.mkdirSync(projectDir, { recursive: true });
+  mkdirSync(projectDir, { recursive: true });
   const hasContinueFlag = opts.claudeArgs?.includes("--continue");
   const hasResumeFlag = opts.claudeArgs?.includes("--resume");
   const hasUserSessionControl = hasContinueFlag || hasResumeFlag;
@@ -329,19 +326,19 @@ async function claudeLocal(opts) {
   const sessionIdFlag = extractFlag(["--session-id"], true);
   if (sessionIdFlag.found && sessionIdFlag.value) {
     startFrom = null;
-    api.logger.debug(`[ClaudeLocal] Using explicit --session-id: ${sessionIdFlag.value}`);
+    logger.debug(`[ClaudeLocal] Using explicit --session-id: ${sessionIdFlag.value}`);
   }
   if (!startFrom && !sessionIdFlag.value) {
     const resumeFlag = extractFlag(["--resume", "-r"], true);
     if (resumeFlag.found) {
       if (resumeFlag.value) {
         startFrom = resumeFlag.value;
-        api.logger.debug(`[ClaudeLocal] Using provided session ID from --resume: ${startFrom}`);
+        logger.debug(`[ClaudeLocal] Using provided session ID from --resume: ${startFrom}`);
       } else {
         const lastSession = claudeFindLastSession(opts.path);
         if (lastSession) {
           startFrom = lastSession;
-          api.logger.debug(`[ClaudeLocal] --resume: Found last session: ${lastSession}`);
+          logger.debug(`[ClaudeLocal] --resume: Found last session: ${lastSession}`);
         }
       }
     }
@@ -352,7 +349,7 @@ async function claudeLocal(opts) {
       const lastSession = claudeFindLastSession(opts.path);
       if (lastSession) {
         startFrom = lastSession;
-        api.logger.debug(`[ClaudeLocal] --continue: Found last session: ${lastSession}`);
+        logger.debug(`[ClaudeLocal] --continue: Found last session: ${lastSession}`);
       }
     }
   }
@@ -360,25 +357,25 @@ async function claudeLocal(opts) {
   let newSessionId = null;
   let effectiveSessionId = startFrom;
   if (!opts.hookSettingsPath) {
-    newSessionId = startFrom ? null : explicitSessionId || node_crypto.randomUUID();
+    newSessionId = startFrom ? null : explicitSessionId || randomUUID();
     effectiveSessionId = startFrom || newSessionId;
     if (startFrom) {
-      api.logger.debug(`[ClaudeLocal] Resuming session: ${startFrom}`);
+      logger.debug(`[ClaudeLocal] Resuming session: ${startFrom}`);
       opts.onSessionFound(startFrom);
     } else if (explicitSessionId) {
-      api.logger.debug(`[ClaudeLocal] Using explicit session ID: ${explicitSessionId}`);
+      logger.debug(`[ClaudeLocal] Using explicit session ID: ${explicitSessionId}`);
       opts.onSessionFound(explicitSessionId);
     } else {
-      api.logger.debug(`[ClaudeLocal] Generated new session ID: ${newSessionId}`);
+      logger.debug(`[ClaudeLocal] Generated new session ID: ${newSessionId}`);
       opts.onSessionFound(newSessionId);
     }
   } else {
     if (startFrom) {
-      api.logger.debug(`[ClaudeLocal] Will resume existing session: ${startFrom}`);
+      logger.debug(`[ClaudeLocal] Will resume existing session: ${startFrom}`);
     } else if (hasUserSessionControl) {
-      api.logger.debug(`[ClaudeLocal] User passed ${hasContinueFlag ? "--continue" : "--resume"} flag, session ID will be determined by hook`);
+      logger.debug(`[ClaudeLocal] User passed ${hasContinueFlag ? "--continue" : "--resume"} flag, session ID will be determined by hook`);
     } else {
-      api.logger.debug(`[ClaudeLocal] Fresh start, session ID will be provided by hook`);
+      logger.debug(`[ClaudeLocal] Fresh start, session ID will be provided by hook`);
     }
   }
   let thinking = false;
@@ -386,7 +383,7 @@ async function claudeLocal(opts) {
   const updateThinking = (newThinking) => {
     if (thinking !== newThinking) {
       thinking = newThinking;
-      api.logger.debug(`[ClaudeLocal] Thinking state changed to: ${thinking}`);
+      logger.debug(`[ClaudeLocal] Thinking state changed to: ${thinking}`);
       if (opts.onThinkingChange) {
         opts.onThinkingChange(thinking);
       }
@@ -420,25 +417,25 @@ async function claudeLocal(opts) {
       }
       if (opts.hookSettingsPath) {
         args.push("--settings", opts.hookSettingsPath);
-        api.logger.debug(`[ClaudeLocal] Using hook settings: ${opts.hookSettingsPath}`);
+        logger.debug(`[ClaudeLocal] Using hook settings: ${opts.hookSettingsPath}`);
       }
-      if (!claudeCliPath || !fs.existsSync(claudeCliPath)) {
+      if (!claudeCliPath || !existsSync(claudeCliPath)) {
         throw new Error("Claude local launcher not found. Please ensure HAPPY_PROJECT_ROOT is set correctly for development.");
       }
       const env = {
         ...process.env,
         ...opts.claudeEnvVars
       };
-      api.logger.debug(`[ClaudeLocal] Spawning launcher: ${claudeCliPath}`);
-      api.logger.debug(`[ClaudeLocal] Args: ${JSON.stringify(args)}`);
-      const child = node_child_process.spawn("node", [claudeCliPath, ...args], {
+      logger.debug(`[ClaudeLocal] Spawning launcher: ${claudeCliPath}`);
+      logger.debug(`[ClaudeLocal] Args: ${JSON.stringify(args)}`);
+      const child = spawn("node", [claudeCliPath, ...args], {
         stdio: ["inherit", "inherit", "inherit", "pipe"],
         signal: opts.abort,
         cwd: opts.path,
         env
       });
       if (child.stdio[3]) {
-        const rl = node_readline.createInterface({
+        const rl = createInterface({
           input: child.stdio[3],
           crlfDelay: Infinity
         });
@@ -471,10 +468,10 @@ async function claudeLocal(opts) {
                 }
                 break;
               default:
-                api.logger.debug(`[ClaudeLocal] Unknown message type: ${message.type}`);
+                logger.debug(`[ClaudeLocal] Unknown message type: ${message.type}`);
             }
           } catch (e) {
-            api.logger.debug(`[ClaudeLocal] Non-JSON line from fd3: ${line}`);
+            logger.debug(`[ClaudeLocal] Non-JSON line from fd3: ${line}`);
           }
         });
         rl.on("error", (err) => {
@@ -577,7 +574,7 @@ class InvalidateSync {
     this._pendings = [];
   };
   _doSync = async () => {
-    await api.backoff(async () => {
+    await backoff(async () => {
       if (this._stopped) {
         return;
       }
@@ -602,21 +599,21 @@ function startFileWatcher(file, onFileChange) {
   void (async () => {
     while (true) {
       try {
-        api.logger.debug(`[FILE_WATCHER] Starting watcher for ${file}`);
-        const watcher = fs$1.watch(file, { persistent: true, signal: abortController.signal });
+        logger.debug(`[FILE_WATCHER] Starting watcher for ${file}`);
+        const watcher = watch(file, { persistent: true, signal: abortController.signal });
         for await (const event of watcher) {
           if (abortController.signal.aborted) {
             return;
           }
-          api.logger.debug(`[FILE_WATCHER] File changed: ${file}`);
+          logger.debug(`[FILE_WATCHER] File changed: ${file}`);
           onFileChange(file);
         }
       } catch (e) {
         if (abortController.signal.aborted) {
           return;
         }
-        api.logger.debug(`[FILE_WATCHER] Watch error: ${e.message}, restarting watcher in a second`);
-        await api.delay(1e3);
+        logger.debug(`[FILE_WATCHER] Watch error: ${e.message}, restarting watcher in a second`);
+        await delay(1e3);
       }
     }
   })();
@@ -639,7 +636,7 @@ async function createSessionScanner(opts) {
   let processedMessageKeys = /* @__PURE__ */ new Set();
   if (opts.sessionId) {
     let messages = await readSessionLog(projectDir, opts.sessionId);
-    api.logger.debug(`[SESSION_SCANNER] Marking ${messages.length} existing messages as processed from session ${opts.sessionId}`);
+    logger.debug(`[SESSION_SCANNER] Marking ${messages.length} existing messages as processed from session ${opts.sessionId}`);
     for (let m of messages) {
       processedMessageKeys.add(messageKey(m));
     }
@@ -669,12 +666,12 @@ async function createSessionScanner(opts) {
           continue;
         }
         processedMessageKeys.add(key);
-        api.logger.debug(`[SESSION_SCANNER] Sending new message: type=${file.type}, uuid=${file.type === "summary" ? file.leafUuid : file.uuid}`);
+        logger.debug(`[SESSION_SCANNER] Sending new message: type=${file.type}, uuid=${file.type === "summary" ? file.leafUuid : file.uuid}`);
         opts.onMessage(file);
         sent++;
       }
       if (sessionMessages.length > 0) {
-        api.logger.debug(`[SESSION_SCANNER] Session ${session}: found=${sessionMessages.length}, skipped=${skipped}, sent=${sent}`);
+        logger.debug(`[SESSION_SCANNER] Session ${session}: found=${sessionMessages.length}, skipped=${skipped}, sent=${sent}`);
       }
     }
     for (let p of sessions) {
@@ -685,8 +682,8 @@ async function createSessionScanner(opts) {
     }
     for (let p of sessions) {
       if (!watchers.has(p)) {
-        api.logger.debug(`[SESSION_SCANNER] Starting watcher for session: ${p}`);
-        watchers.set(p, startFileWatcher(node_path.join(projectDir, `${p}.jsonl`), () => {
+        logger.debug(`[SESSION_SCANNER] Starting watcher for session: ${p}`);
+        watchers.set(p, startFileWatcher(join(projectDir, `${p}.jsonl`), () => {
           sync.invalidate();
         }));
       }
@@ -708,21 +705,21 @@ async function createSessionScanner(opts) {
     },
     onNewSession: (sessionId) => {
       if (currentSessionId === sessionId) {
-        api.logger.debug(`[SESSION_SCANNER] New session: ${sessionId} is the same as the current session, skipping`);
+        logger.debug(`[SESSION_SCANNER] New session: ${sessionId} is the same as the current session, skipping`);
         return;
       }
       if (finishedSessions.has(sessionId)) {
-        api.logger.debug(`[SESSION_SCANNER] New session: ${sessionId} is already finished, skipping`);
+        logger.debug(`[SESSION_SCANNER] New session: ${sessionId} is already finished, skipping`);
         return;
       }
       if (pendingSessions.has(sessionId)) {
-        api.logger.debug(`[SESSION_SCANNER] New session: ${sessionId} is already pending, skipping`);
+        logger.debug(`[SESSION_SCANNER] New session: ${sessionId} is already pending, skipping`);
         return;
       }
       if (currentSessionId) {
         pendingSessions.add(currentSessionId);
       }
-      api.logger.debug(`[SESSION_SCANNER] New session: ${sessionId}`);
+      logger.debug(`[SESSION_SCANNER] New session: ${sessionId}`);
       currentSessionId = sessionId;
       sync.invalidate();
     }
@@ -742,13 +739,13 @@ function messageKey(message) {
   }
 }
 async function readSessionLog(projectDir, sessionId) {
-  const expectedSessionFile = node_path.join(projectDir, `${sessionId}.jsonl`);
-  api.logger.debug(`[SESSION_SCANNER] Reading session file: ${expectedSessionFile}`);
+  const expectedSessionFile = join(projectDir, `${sessionId}.jsonl`);
+  logger.debug(`[SESSION_SCANNER] Reading session file: ${expectedSessionFile}`);
   let file;
   try {
-    file = await promises.readFile(expectedSessionFile, "utf-8");
+    file = await readFile(expectedSessionFile, "utf-8");
   } catch (error) {
-    api.logger.debug(`[SESSION_SCANNER] Session file not found: ${expectedSessionFile}`);
+    logger.debug(`[SESSION_SCANNER] Session file not found: ${expectedSessionFile}`);
     return [];
   }
   let lines = file.split("\n");
@@ -762,13 +759,13 @@ async function readSessionLog(projectDir, sessionId) {
       if (message.type && INTERNAL_CLAUDE_EVENT_TYPES.has(message.type)) {
         continue;
       }
-      let parsed = api.RawJSONLinesSchema.safeParse(message);
+      let parsed = RawJSONLinesSchema.safeParse(message);
       if (!parsed.success) {
         continue;
       }
       messages.push(parsed.data);
     } catch (e) {
-      api.logger.debug(`[SESSION_SCANNER] Error processing message: ${e}`);
+      logger.debug(`[SESSION_SCANNER] Error processing message: ${e}`);
       continue;
     }
   }
@@ -800,7 +797,7 @@ async function claudeLocalLauncher(session) {
       await exutFuture.promise;
     }
     async function doAbort() {
-      api.logger.debug("[local]: doAbort");
+      logger.debug("[local]: doAbort");
       if (!exitReason) {
         exitReason = "switch";
       }
@@ -808,7 +805,7 @@ async function claudeLocalLauncher(session) {
       await abort();
     }
     async function doSwitch() {
-      api.logger.debug("[local]: doSwitch");
+      logger.debug("[local]: doSwitch");
       if (!exitReason) {
         exitReason = "switch";
       }
@@ -830,7 +827,7 @@ async function claudeLocalLauncher(session) {
       if (exitReason) {
         return exitReason;
       }
-      api.logger.debug("[local]: launch");
+      logger.debug("[local]: launch");
       try {
         await claudeLocal({
           path: session.path,
@@ -850,7 +847,7 @@ async function claudeLocalLauncher(session) {
           break;
         }
       } catch (e) {
-        api.logger.debug("[local]: launch error", e);
+        logger.debug("[local]: launch error", e);
         if (!exitReason) {
           session.client.sendSessionEvent({ type: "message", message: "Process exited unexpectedly" });
           continue;
@@ -858,7 +855,7 @@ async function claudeLocalLauncher(session) {
           break;
         }
       }
-      api.logger.debug("[local]: launch done");
+      logger.debug("[local]: launch done");
     }
   } finally {
     exutFuture.resolve(void 0);
@@ -944,14 +941,14 @@ class MessageBuffer {
 }
 
 const RemoteModeDisplay = ({ messageBuffer, logPath, onExit, onSwitchToLocal }) => {
-  const [messages, setMessages] = React.useState([]);
-  const [confirmationMode, setConfirmationMode] = React.useState(null);
-  const [actionInProgress, setActionInProgress] = React.useState(null);
-  const confirmationTimeoutRef = React.useRef(null);
-  const { stdout } = ink.useStdout();
+  const [messages, setMessages] = useState([]);
+  const [confirmationMode, setConfirmationMode] = useState(null);
+  const [actionInProgress, setActionInProgress] = useState(null);
+  const confirmationTimeoutRef = useRef(null);
+  const { stdout } = useStdout();
   const terminalWidth = stdout.columns || 80;
   const terminalHeight = stdout.rows || 24;
-  React.useEffect(() => {
+  useEffect(() => {
     setMessages(messageBuffer.getMessages());
     const unsubscribe = messageBuffer.onUpdate((newMessages) => {
       setMessages(newMessages);
@@ -963,14 +960,14 @@ const RemoteModeDisplay = ({ messageBuffer, logPath, onExit, onSwitchToLocal }) 
       }
     };
   }, [messageBuffer]);
-  const resetConfirmation = React.useCallback(() => {
+  const resetConfirmation = useCallback(() => {
     setConfirmationMode(null);
     if (confirmationTimeoutRef.current) {
       clearTimeout(confirmationTimeoutRef.current);
       confirmationTimeoutRef.current = null;
     }
   }, []);
-  const setConfirmationWithTimeout = React.useCallback((mode) => {
+  const setConfirmationWithTimeout = useCallback((mode) => {
     setConfirmationMode(mode);
     if (confirmationTimeoutRef.current) {
       clearTimeout(confirmationTimeoutRef.current);
@@ -979,7 +976,7 @@ const RemoteModeDisplay = ({ messageBuffer, logPath, onExit, onSwitchToLocal }) 
       resetConfirmation();
     }, 15e3);
   }, [resetConfirmation]);
-  ink.useInput(React.useCallback(async (input, key) => {
+  useInput(useCallback(async (input, key) => {
     if (actionInProgress) return;
     if (key.ctrl && input === "c") {
       if (confirmationMode === "exit") {
@@ -1037,8 +1034,8 @@ const RemoteModeDisplay = ({ messageBuffer, logPath, onExit, onSwitchToLocal }) 
       return chunks.join("\n");
     }).join("\n");
   };
-  return /* @__PURE__ */ React.createElement(ink.Box, { flexDirection: "column", width: terminalWidth, height: terminalHeight }, /* @__PURE__ */ React.createElement(
-    ink.Box,
+  return /* @__PURE__ */ React.createElement(Box, { flexDirection: "column", width: terminalWidth, height: terminalHeight }, /* @__PURE__ */ React.createElement(
+    Box,
     {
       flexDirection: "column",
       width: terminalWidth,
@@ -1048,13 +1045,13 @@ const RemoteModeDisplay = ({ messageBuffer, logPath, onExit, onSwitchToLocal }) 
       paddingX: 1,
       overflow: "hidden"
     },
-    /* @__PURE__ */ React.createElement(ink.Box, { flexDirection: "column", marginBottom: 1 }, /* @__PURE__ */ React.createElement(ink.Text, { color: "gray", bold: true }, "\u{1F4E1} Remote Mode - Claude Messages"), /* @__PURE__ */ React.createElement(ink.Text, { color: "gray", dimColor: true }, "\u2500".repeat(Math.min(terminalWidth - 4, 60)))),
-    /* @__PURE__ */ React.createElement(ink.Box, { flexDirection: "column", height: terminalHeight - 10, overflow: "hidden" }, messages.length === 0 ? /* @__PURE__ */ React.createElement(ink.Text, { color: "gray", dimColor: true }, "Waiting for messages...") : (
+    /* @__PURE__ */ React.createElement(Box, { flexDirection: "column", marginBottom: 1 }, /* @__PURE__ */ React.createElement(Text, { color: "gray", bold: true }, "\u{1F4E1} Remote Mode - Claude Messages"), /* @__PURE__ */ React.createElement(Text, { color: "gray", dimColor: true }, "\u2500".repeat(Math.min(terminalWidth - 4, 60)))),
+    /* @__PURE__ */ React.createElement(Box, { flexDirection: "column", height: terminalHeight - 10, overflow: "hidden" }, messages.length === 0 ? /* @__PURE__ */ React.createElement(Text, { color: "gray", dimColor: true }, "Waiting for messages...") : (
       // Show only the last messages that fit in the available space
-      messages.slice(-Math.max(1, terminalHeight - 10)).map((msg) => /* @__PURE__ */ React.createElement(ink.Box, { key: msg.id, flexDirection: "column", marginBottom: 1 }, /* @__PURE__ */ React.createElement(ink.Text, { color: getMessageColor(msg.type), dimColor: true }, formatMessage(msg))))
+      messages.slice(-Math.max(1, terminalHeight - 10)).map((msg) => /* @__PURE__ */ React.createElement(Box, { key: msg.id, flexDirection: "column", marginBottom: 1 }, /* @__PURE__ */ React.createElement(Text, { color: getMessageColor(msg.type), dimColor: true }, formatMessage(msg))))
     ))
   ), /* @__PURE__ */ React.createElement(
-    ink.Box,
+    Box,
     {
       width: terminalWidth,
       borderStyle: "round",
@@ -1064,7 +1061,7 @@ const RemoteModeDisplay = ({ messageBuffer, logPath, onExit, onSwitchToLocal }) 
       alignItems: "center",
       flexDirection: "column"
     },
-    /* @__PURE__ */ React.createElement(ink.Box, { flexDirection: "column", alignItems: "center" }, actionInProgress === "exiting" ? /* @__PURE__ */ React.createElement(ink.Text, { color: "gray", bold: true }, "Exiting...") : actionInProgress === "switching" ? /* @__PURE__ */ React.createElement(ink.Text, { color: "gray", bold: true }, "Switching to local mode...") : confirmationMode === "exit" ? /* @__PURE__ */ React.createElement(ink.Text, { color: "red", bold: true }, "\u26A0\uFE0F  Press Ctrl-C again to exit completely") : confirmationMode === "switch" ? /* @__PURE__ */ React.createElement(ink.Text, { color: "yellow", bold: true }, "\u23F8\uFE0F  Press space again to switch to local mode") : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(ink.Text, { color: "green", bold: true }, "\u{1F4F1} Press space to switch to local mode \u2022 Ctrl-C to exit")), process.env.DEBUG && logPath && /* @__PURE__ */ React.createElement(ink.Text, { color: "gray", dimColor: true }, "Debug logs: ", logPath))
+    /* @__PURE__ */ React.createElement(Box, { flexDirection: "column", alignItems: "center" }, actionInProgress === "exiting" ? /* @__PURE__ */ React.createElement(Text, { color: "gray", bold: true }, "Exiting...") : actionInProgress === "switching" ? /* @__PURE__ */ React.createElement(Text, { color: "gray", bold: true }, "Switching to local mode...") : confirmationMode === "exit" ? /* @__PURE__ */ React.createElement(Text, { color: "red", bold: true }, "\u26A0\uFE0F  Press Ctrl-C again to exit completely") : confirmationMode === "switch" ? /* @__PURE__ */ React.createElement(Text, { color: "yellow", bold: true }, "\u23F8\uFE0F  Press space again to switch to local mode") : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(Text, { color: "green", bold: true }, "\u{1F4F1} Press space to switch to local mode \u2022 Ctrl-C to exit")), process.env.DEBUG && logPath && /* @__PURE__ */ React.createElement(Text, { color: "gray", dimColor: true }, "Debug logs: ", logPath))
   ));
 };
 
@@ -1165,19 +1162,19 @@ class AbortError extends Error {
   }
 }
 
-const __filename$1 = node_url.fileURLToPath((typeof document === 'undefined' ? require('u' + 'rl').pathToFileURL(__filename).href : (_documentCurrentScript && _documentCurrentScript.tagName.toUpperCase() === 'SCRIPT' && _documentCurrentScript.src || new URL('index-B8nGJG4m.cjs', document.baseURI).href)));
-const __dirname$1 = node_path.join(__filename$1, "..");
+const __filename$1 = fileURLToPath(import.meta.url);
+const __dirname$1 = join(__filename$1, "..");
 function getGlobalClaudeVersion() {
   try {
     const cleanEnv = getCleanEnv();
-    const output = node_child_process.execSync("claude --version", {
+    const output = execSync("claude --version", {
       encoding: "utf8",
       stdio: ["pipe", "pipe", "pipe"],
-      cwd: os.homedir(),
+      cwd: homedir(),
       env: cleanEnv
     }).trim();
     const match = output.match(/(\d+\.\d+\.\d+)/);
-    api.logger.debug(`[Claude SDK] Global claude --version output: ${output}`);
+    logger.debug(`[Claude SDK] Global claude --version output: ${output}`);
     return match ? match[1] : null;
   } catch {
     return null;
@@ -1196,42 +1193,42 @@ function getCleanEnv() {
       return !normalizedP.startsWith(normalizedCwd);
     }).join(pathSep);
     env[actualPathKey] = cleanPath;
-    api.logger.debug(`[Claude SDK] Cleaned PATH, removed local paths from: ${cwd}`);
+    logger.debug(`[Claude SDK] Cleaned PATH, removed local paths from: ${cwd}`);
   }
-  if (api.isBun()) {
+  if (isBun()) {
     Object.keys(env).forEach((key) => {
       if (key.startsWith("BUN_")) {
         delete env[key];
       }
     });
-    api.logger.debug("[Claude SDK] Removed Bun-specific environment variables for Node.js compatibility");
+    logger.debug("[Claude SDK] Removed Bun-specific environment variables for Node.js compatibility");
   }
   return env;
 }
 function findGlobalClaudePath() {
-  const homeDir = os.homedir();
+  const homeDir = homedir();
   const cleanEnv = getCleanEnv();
   try {
-    node_child_process.execSync("claude --version", {
+    execSync("claude --version", {
       encoding: "utf8",
       stdio: ["pipe", "pipe", "pipe"],
       cwd: homeDir,
       env: cleanEnv
     });
-    api.logger.debug("[Claude SDK] Global claude command available (checked with clean PATH)");
+    logger.debug("[Claude SDK] Global claude command available (checked with clean PATH)");
     return "claude";
   } catch {
   }
   if (process.platform !== "win32") {
     try {
-      const result = node_child_process.execSync("which claude", {
+      const result = execSync("which claude", {
         encoding: "utf8",
         stdio: ["pipe", "pipe", "pipe"],
         cwd: homeDir,
         env: cleanEnv
       }).trim();
-      if (result && fs.existsSync(result)) {
-        api.logger.debug(`[Claude SDK] Found global claude path via which: ${result}`);
+      if (result && existsSync(result)) {
+        logger.debug(`[Claude SDK] Found global claude path via which: ${result}`);
         return result;
       }
     } catch {
@@ -1240,31 +1237,31 @@ function findGlobalClaudePath() {
   return null;
 }
 function getDefaultClaudeCodePath() {
-  const nodeModulesPath = node_path.join(__dirname$1, "..", "..", "..", "node_modules", "@anthropic-ai", "claude-code", "cli.js");
+  const nodeModulesPath = join(__dirname$1, "..", "..", "..", "node_modules", "@anthropic-ai", "claude-code", "cli.js");
   if (process.env.HAPPY_CLAUDE_PATH) {
-    api.logger.debug(`[Claude SDK] Using HAPPY_CLAUDE_PATH: ${process.env.HAPPY_CLAUDE_PATH}`);
+    logger.debug(`[Claude SDK] Using HAPPY_CLAUDE_PATH: ${process.env.HAPPY_CLAUDE_PATH}`);
     return process.env.HAPPY_CLAUDE_PATH;
   }
   if (process.env.HAPPY_USE_BUNDLED_CLAUDE === "1") {
-    api.logger.debug(`[Claude SDK] Forced bundled version: ${nodeModulesPath}`);
+    logger.debug(`[Claude SDK] Forced bundled version: ${nodeModulesPath}`);
     return nodeModulesPath;
   }
   const globalPath = findGlobalClaudePath();
   if (!globalPath) {
-    api.logger.debug(`[Claude SDK] No global claude found, using bundled: ${nodeModulesPath}`);
+    logger.debug(`[Claude SDK] No global claude found, using bundled: ${nodeModulesPath}`);
     return nodeModulesPath;
   }
   const globalVersion = getGlobalClaudeVersion();
-  api.logger.debug(`[Claude SDK] Global version: ${globalVersion || "unknown"}`);
+  logger.debug(`[Claude SDK] Global version: ${globalVersion || "unknown"}`);
   if (!globalVersion) {
-    api.logger.debug(`[Claude SDK] Cannot compare versions, using global: ${globalPath}`);
+    logger.debug(`[Claude SDK] Cannot compare versions, using global: ${globalPath}`);
     return globalPath;
   }
   return globalPath;
 }
 function logDebug(message) {
   if (process.env.DEBUG) {
-    api.logger.debug(message);
+    logger.debug(message);
     console.log(message);
   }
 }
@@ -1321,7 +1318,7 @@ class Query {
    * Read messages from Claude process stdout
    */
   async readMessages() {
-    const rl = node_readline.createInterface({ input: this.childStdout });
+    const rl = createInterface({ input: this.childStdout });
     try {
       for await (const line of rl) {
         if (line.trim()) {
@@ -1343,7 +1340,7 @@ class Query {
             }
             this.inputStream.enqueue(message);
           } catch (e) {
-            api.logger.debug(line);
+            logger.debug(line);
           }
         }
       }
@@ -1529,14 +1526,14 @@ function query(config) {
   }
   const isJsFile = pathToClaudeCodeExecutable.endsWith(".js") || pathToClaudeCodeExecutable.endsWith(".cjs");
   const isCommandOnly = pathToClaudeCodeExecutable === "claude";
-  if (!isCommandOnly && !fs.existsSync(pathToClaudeCodeExecutable)) {
+  if (!isCommandOnly && !existsSync(pathToClaudeCodeExecutable)) {
     throw new ReferenceError(`Claude Code executable not found at ${pathToClaudeCodeExecutable}. Is options.pathToClaudeCodeExecutable set?`);
   }
   const spawnCommand = isJsFile ? executable : pathToClaudeCodeExecutable;
   const spawnArgs = isJsFile ? [...executableArgs, pathToClaudeCodeExecutable, ...args] : args;
   const spawnEnv = isCommandOnly ? getCleanEnv() : process.env;
   logDebug(`Spawning Claude Code process: ${spawnCommand} ${spawnArgs.join(" ")} (using ${isCommandOnly ? "clean" : "normal"} env)`);
-  const child = node_child_process.spawn(spawnCommand, spawnArgs, {
+  const child = spawn(spawnCommand, spawnArgs, {
     cwd,
     stdio: ["pipe", "pipe", "pipe"],
     signal: config.options?.abort,
@@ -1776,10 +1773,10 @@ async function awaitFileExist(file, timeout = 1e4) {
   const startTime = Date.now();
   while (Date.now() - startTime < timeout) {
     try {
-      await fs$1.access(file);
+      await access(file);
       return true;
     } catch (e) {
-      await api.delay(1e3);
+      await delay(1e3);
     }
   }
   return false;
@@ -1797,14 +1794,14 @@ async function claudeRemote(opts) {
           const nextArg = opts.claudeArgs[i + 1];
           if (!nextArg.startsWith("-") && nextArg.includes("-")) {
             startFrom = nextArg;
-            api.logger.debug(`[claudeRemote] Found --resume with session ID: ${startFrom}`);
+            logger.debug(`[claudeRemote] Found --resume with session ID: ${startFrom}`);
             break;
           } else {
-            api.logger.debug("[claudeRemote] Found --resume without session ID - not supported in remote mode");
+            logger.debug("[claudeRemote] Found --resume without session ID - not supported in remote mode");
             break;
           }
         } else {
-          api.logger.debug("[claudeRemote] Found --resume without session ID - not supported in remote mode");
+          logger.debug("[claudeRemote] Found --resume without session ID - not supported in remote mode");
           break;
         }
       }
@@ -1831,7 +1828,7 @@ async function claudeRemote(opts) {
   }
   let isCompactCommand = false;
   if (specialCommand.type === "compact") {
-    api.logger.debug("[claudeRemote] /compact command detected - will process as normal but with compaction behavior");
+    logger.debug("[claudeRemote] /compact command detected - will process as normal but with compaction behavior");
     isCompactCommand = true;
     if (opts.onCompletionEvent) {
       opts.onCompletionEvent("Compaction started");
@@ -1853,7 +1850,7 @@ async function claudeRemote(opts) {
     executable: opts.jsRuntime ?? "node",
     abort: opts.signal,
     pathToClaudeCodeExecutable: (() => {
-      return node_path.resolve(node_path.join(api.projectPath(), "scripts", "claude_remote_launcher.cjs"));
+      return resolve(join(projectPath(), "scripts", "claude_remote_launcher.cjs"));
     })(),
     settingsPath: opts.hookSettingsPath
   };
@@ -1861,7 +1858,7 @@ async function claudeRemote(opts) {
   const updateThinking = (newThinking) => {
     if (thinking !== newThinking) {
       thinking = newThinking;
-      api.logger.debug(`[claudeRemote] Thinking state changed to: ${thinking}`);
+      logger.debug(`[claudeRemote] Thinking state changed to: ${thinking}`);
       if (opts.onThinkingChange) {
         opts.onThinkingChange(thinking);
       }
@@ -1881,26 +1878,26 @@ async function claudeRemote(opts) {
   });
   updateThinking(true);
   try {
-    api.logger.debug(`[claudeRemote] Starting to iterate over response`);
+    logger.debug(`[claudeRemote] Starting to iterate over response`);
     for await (const message of response) {
-      api.logger.debugLargeJson(`[claudeRemote] Message ${message.type}`, message);
+      logger.debugLargeJson(`[claudeRemote] Message ${message.type}`, message);
       opts.onMessage(message);
       if (message.type === "system" && message.subtype === "init") {
         updateThinking(true);
         const systemInit = message;
         if (systemInit.session_id) {
-          api.logger.debug(`[claudeRemote] Waiting for session file to be written to disk: ${systemInit.session_id}`);
+          logger.debug(`[claudeRemote] Waiting for session file to be written to disk: ${systemInit.session_id}`);
           const projectDir = getProjectPath(opts.path);
-          const found = await awaitFileExist(node_path.join(projectDir, `${systemInit.session_id}.jsonl`));
-          api.logger.debug(`[claudeRemote] Session file found: ${systemInit.session_id} ${found}`);
+          const found = await awaitFileExist(join(projectDir, `${systemInit.session_id}.jsonl`));
+          logger.debug(`[claudeRemote] Session file found: ${systemInit.session_id} ${found}`);
           opts.onSessionFound(systemInit.session_id);
         }
       }
       if (message.type === "result") {
         updateThinking(false);
-        api.logger.debug("[claudeRemote] Result received, exiting claudeRemote");
+        logger.debug("[claudeRemote] Result received, exiting claudeRemote");
         if (isCompactCommand) {
-          api.logger.debug("[claudeRemote] Compaction completed");
+          logger.debug("[claudeRemote] Compaction completed");
           if (opts.onCompletionEvent) {
             opts.onCompletionEvent("Compaction completed");
           }
@@ -1920,7 +1917,7 @@ async function claudeRemote(opts) {
         if (msg.message.role === "user" && Array.isArray(msg.message.content)) {
           for (let c of msg.message.content) {
             if (c.type === "tool_result" && c.tool_use_id && opts.isAborted(c.tool_use_id)) {
-              api.logger.debug("[claudeRemote] Tool aborted, exiting claudeRemote");
+              logger.debug("[claudeRemote] Tool aborted, exiting claudeRemote");
               return;
             }
           }
@@ -1929,7 +1926,7 @@ async function claudeRemote(opts) {
     }
   } catch (e) {
     if (e instanceof AbortError) {
-      api.logger.debug(`[claudeRemote] Aborted`);
+      logger.debug(`[claudeRemote] Aborted`);
     } else {
       throw e;
     }
@@ -2035,9 +2032,9 @@ class PermissionHandler {
       this.permissionMode = response.mode;
     }
     if (pending.toolName === "exit_plan_mode" || pending.toolName === "ExitPlanMode") {
-      api.logger.debug("Plan mode result received", response);
+      logger.debug("Plan mode result received", response);
       if (response.approved) {
-        api.logger.debug("Plan approved - injecting PLAN_FAKE_RESTART");
+        logger.debug("Plan approved - injecting PLAN_FAKE_RESTART");
         if (response.mode && ["default", "acceptEdits", "bypassPermissions"].includes(response.mode)) {
           this.session.queue.unshift(PLAN_FAKE_RESTART, { permissionMode: response.mode });
         } else {
@@ -2080,7 +2077,7 @@ class PermissionHandler {
     }
     let toolCallId = this.resolveToolCallId(toolName, input);
     if (!toolCallId) {
-      await api.delay(1e3);
+      await delay(1e3);
       toolCallId = this.resolveToolCallId(toolName, input);
       if (!toolCallId) {
         throw new Error(`Could not resolve tool call ID for ${toolName}`);
@@ -2134,7 +2131,7 @@ class PermissionHandler {
           }
         }
       }));
-      api.logger.debug(`Permission request sent for tool call ${id}: ${toolName}`);
+      logger.debug(`Permission request sent for tool call ${id}: ${toolName}`);
     });
   }
   /**
@@ -2163,7 +2160,7 @@ class PermissionHandler {
   resolveToolCallId(name, args) {
     for (let i = this.toolCalls.length - 1; i >= 0; i--) {
       const call = this.toolCalls[i];
-      if (call.name === name && node_util.isDeepStrictEqual(call.input, args)) {
+      if (call.name === name && isDeepStrictEqual(call.input, args)) {
         if (call.used) {
           return null;
         }
@@ -2256,11 +2253,11 @@ class PermissionHandler {
    */
   setupClientHandler() {
     this.session.client.rpcHandlerManager.registerHandler("permission", async (message) => {
-      api.logger.debug(`Permission response: ${JSON.stringify(message)}`);
+      logger.debug(`Permission response: ${JSON.stringify(message)}`);
       const id = message.id;
       const pending = this.pendingRequests.get(id);
       if (!pending) {
-        api.logger.debug("Permission request not found or already resolved");
+        logger.debug("Permission request not found or already resolved");
         return;
       }
       this.responses.set(id, { ...message, receivedAt: Date.now() });
@@ -2298,7 +2295,7 @@ class PermissionHandler {
 }
 
 function formatClaudeMessageForInk(message, messageBuffer, onAssistantResult) {
-  api.logger.debugLargeJson("[CLAUDE INK] Message from remote mode:", message);
+  logger.debugLargeJson("[CLAUDE INK] Message from remote mode:", message);
   switch (message.type) {
     case "system": {
       const sysMsg = message;
@@ -2393,7 +2390,7 @@ function formatClaudeMessageForInk(message, messageBuffer, onAssistantResult) {
       } else if (resultMsg.subtype === "error_during_execution") {
         messageBuffer.addMessage("\u274C Error during execution", "result");
         messageBuffer.addMessage(`Completed ${resultMsg.num_turns} turns before error`, "status");
-        api.logger.debugLargeJson("[RESULT] Error during execution", resultMsg);
+        logger.debugLargeJson("[RESULT] Error during execution", resultMsg);
       }
       break;
     }
@@ -2407,7 +2404,7 @@ function formatClaudeMessageForInk(message, messageBuffer, onAssistantResult) {
 
 function getGitBranch(cwd) {
   try {
-    const branch = node_child_process.execSync("git rev-parse --abbrev-ref HEAD", {
+    const branch = execSync("git rev-parse --abbrev-ref HEAD", {
       cwd,
       encoding: "utf8",
       stdio: ["ignore", "pipe", "ignore"]
@@ -2448,7 +2445,7 @@ class SDKToLogConverter {
    * Convert SDK message to log format
    */
   convert(sdkMessage) {
-    const uuid = node_crypto.randomUUID();
+    const uuid = randomUUID();
     const timestamp = (/* @__PURE__ */ new Date()).toISOString();
     let parentUuid = this.lastUuid;
     let isSidechain = false;
@@ -2568,7 +2565,7 @@ class SDKToLogConverter {
    * Used for Task tool sub-agent prompts
    */
   convertSidechainUserMessage(toolUseId, content) {
-    const uuid = node_crypto.randomUUID();
+    const uuid = randomUUID();
     const timestamp = (/* @__PURE__ */ new Date()).toISOString();
     this.sidechainLastUUID.set(toolUseId, uuid);
     return {
@@ -2595,7 +2592,7 @@ class SDKToLogConverter {
    * @param parentToolUseId - Optional parent tool ID if this is a sidechain tool
    */
   generateInterruptedToolResult(toolUseId, parentToolUseId) {
-    const uuid = node_crypto.randomUUID();
+    const uuid = randomUUID();
     const timestamp = (/* @__PURE__ */ new Date()).toISOString();
     const errorMessage = "[Request interrupted by user for tool use]";
     let isSidechain = false;
@@ -2640,7 +2637,7 @@ class OutgoingMessageQueue {
   }
   queue = [];
   nextId = 1;
-  lock = new api.AsyncLock();
+  lock = new AsyncLock();
   processTimer;
   delayTimers = /* @__PURE__ */ new Map();
   /**
@@ -2772,25 +2769,25 @@ class OutgoingMessageQueue {
 }
 
 async function claudeRemoteLauncher(session) {
-  api.logger.debug("[claudeRemoteLauncher] Starting remote launcher");
+  logger.debug("[claudeRemoteLauncher] Starting remote launcher");
   const hasTTY = process.stdout.isTTY && process.stdin.isTTY;
-  api.logger.debug(`[claudeRemoteLauncher] TTY available: ${hasTTY}`);
+  logger.debug(`[claudeRemoteLauncher] TTY available: ${hasTTY}`);
   let messageBuffer = new MessageBuffer();
   let inkInstance = null;
   if (hasTTY) {
     console.clear();
-    inkInstance = ink.render(React.createElement(RemoteModeDisplay, {
+    inkInstance = render(React.createElement(RemoteModeDisplay, {
       messageBuffer,
       logPath: process.env.DEBUG ? session.logPath : void 0,
       onExit: async () => {
-        api.logger.debug("[remote]: Exiting client via Ctrl-C");
+        logger.debug("[remote]: Exiting client via Ctrl-C");
         if (!exitReason) {
           exitReason = "exit";
         }
         await abort();
       },
       onSwitchToLocal: () => {
-        api.logger.debug("[remote]: Switching to local mode via double space");
+        logger.debug("[remote]: Switching to local mode via double space");
         doSwitch();
       }
     }), {
@@ -2815,11 +2812,11 @@ async function claudeRemoteLauncher(session) {
     await abortFuture?.promise;
   }
   async function doAbort() {
-    api.logger.debug("[remote]: doAbort");
+    logger.debug("[remote]: doAbort");
     await abort();
   }
   async function doSwitch() {
-    api.logger.debug("[remote]: doSwitch");
+    logger.debug("[remote]: doSwitch");
     if (!exitReason) {
       exitReason = "switch";
     }
@@ -2849,7 +2846,7 @@ async function claudeRemoteLauncher(session) {
       if (umessage.message.content && Array.isArray(umessage.message.content)) {
         for (let c of umessage.message.content) {
           if (c.type === "tool_use" && (c.name === "exit_plan_mode" || c.name === "ExitPlanMode")) {
-            api.logger.debug("[remote]: detected plan mode tool call " + c.id);
+            logger.debug("[remote]: detected plan mode tool call " + c.id);
             planModeToolCalls.add(c.id);
           }
         }
@@ -2860,7 +2857,7 @@ async function claudeRemoteLauncher(session) {
       if (umessage.message.content && Array.isArray(umessage.message.content)) {
         for (let c of umessage.message.content) {
           if (c.type === "tool_use") {
-            api.logger.debug("[remote]: detected tool use " + c.id + " parent: " + umessage.parent_tool_use_id);
+            logger.debug("[remote]: detected tool use " + c.id + " parent: " + umessage.parent_tool_use_id);
             ongoingToolCalls.set(c.id, { parentToolCallId: umessage.parent_tool_use_id ?? null });
           }
         }
@@ -2888,8 +2885,8 @@ async function claudeRemoteLauncher(session) {
             content: umessage.message.content.map((c) => {
               if (c.type === "tool_result" && c.tool_use_id && planModeToolCalls.has(c.tool_use_id)) {
                 if (c.content === PLAN_FAKE_REJECT) {
-                  api.logger.debug("[remote]: hack plan mode exit");
-                  api.logger.debugLargeJson("[remote]: hack plan mode exit", c);
+                  logger.debug("[remote]: hack plan mode exit");
+                  logger.debugLargeJson("[remote]: hack plan mode exit", c);
                   return {
                     ...c,
                     is_error: false,
@@ -2975,17 +2972,17 @@ async function claudeRemoteLauncher(session) {
     let pending = null;
     let previousSessionId = null;
     while (!exitReason) {
-      api.logger.debug("[remote]: launch");
+      logger.debug("[remote]: launch");
       messageBuffer.addMessage("\u2550".repeat(40), "status");
       const isNewSession = session.sessionId !== previousSessionId;
       if (isNewSession) {
         messageBuffer.addMessage("Starting new Claude session...", "status");
         permissionHandler.reset();
         sdkToLogConverter.resetParentChain();
-        api.logger.debug(`[remote]: New session detected (previous: ${previousSessionId}, current: ${session.sessionId})`);
+        logger.debug(`[remote]: New session detected (previous: ${previousSessionId}, current: ${session.sessionId})`);
       } else {
         messageBuffer.addMessage("Continuing Claude session...", "status");
-        api.logger.debug(`[remote]: Continuing existing session: ${session.sessionId}`);
+        logger.debug(`[remote]: Continuing existing session: ${session.sessionId}`);
       }
       previousSessionId = session.sessionId;
       const controller = new AbortController();
@@ -3015,7 +3012,7 @@ async function claudeRemoteLauncher(session) {
             let msg = await session.queue.waitForMessagesAndGetAsString(controller.signal);
             if (msg) {
               if (modeHash && msg.hash !== modeHash || msg.isolate) {
-                api.logger.debug("[remote]: mode has changed, pending message");
+                logger.debug("[remote]: mode has changed, pending message");
                 pending = msg;
                 return null;
               }
@@ -3038,11 +3035,11 @@ async function claudeRemoteLauncher(session) {
           claudeArgs: session.claudeArgs,
           onMessage,
           onCompletionEvent: (message) => {
-            api.logger.debug(`[remote]: Completion event: ${message}`);
+            logger.debug(`[remote]: Completion event: ${message}`);
             session.client.sendSessionEvent({ type: "message", message });
           },
           onSessionReset: () => {
-            api.logger.debug("[remote]: Session reset");
+            logger.debug("[remote]: Session reset");
             session.clearSessionId();
           },
           onReady: () => {
@@ -3062,29 +3059,29 @@ async function claudeRemoteLauncher(session) {
           session.client.sendSessionEvent({ type: "message", message: "Aborted by user" });
         }
       } catch (e) {
-        api.logger.debug("[remote]: launch error", e);
+        logger.debug("[remote]: launch error", e);
         if (!exitReason) {
           session.client.sendSessionEvent({ type: "message", message: "Process exited unexpectedly" });
           continue;
         }
       } finally {
-        api.logger.debug("[remote]: launch finally");
+        logger.debug("[remote]: launch finally");
         for (let [toolCallId, { parentToolCallId }] of ongoingToolCalls) {
           const converted = sdkToLogConverter.generateInterruptedToolResult(toolCallId, parentToolCallId);
           if (converted) {
-            api.logger.debug("[remote]: terminating tool call " + toolCallId + " parent: " + parentToolCallId);
+            logger.debug("[remote]: terminating tool call " + toolCallId + " parent: " + parentToolCallId);
             session.client.sendClaudeSessionMessage(converted);
           }
         }
         ongoingToolCalls.clear();
-        api.logger.debug("[remote]: flushing message queue");
+        logger.debug("[remote]: flushing message queue");
         await messageQueue.flush();
         messageQueue.destroy();
-        api.logger.debug("[remote]: message queue flushed");
+        logger.debug("[remote]: message queue flushed");
         abortController = null;
         abortFuture?.resolve(void 0);
         abortFuture = null;
-        api.logger.debug("[remote]: launch done");
+        logger.debug("[remote]: launch done");
         permissionHandler.reset();
         modeHash = null;
         mode = null;
@@ -3108,7 +3105,7 @@ async function claudeRemoteLauncher(session) {
 }
 
 async function loop(opts) {
-  const logPath = api.logger.logFilePath;
+  const logPath = logger.logFilePath;
   let session = new Session({
     api: opts.api,
     client: opts.session,
@@ -3129,7 +3126,7 @@ async function loop(opts) {
   }
   let mode = opts.startingMode ?? "local";
   while (true) {
-    api.logger.debug(`[loop] Iteration with mode: ${mode}`);
+    logger.debug(`[loop] Iteration with mode: ${mode}`);
     if (mode === "local") {
       let reason = await claudeLocalLauncher(session);
       if (reason === "exit") {
@@ -3158,7 +3155,7 @@ async function loop(opts) {
 async function extractSDKMetadata() {
   const abortController = new AbortController();
   try {
-    api.logger.debug("[metadataExtractor] Starting SDK metadata extraction");
+    logger.debug("[metadataExtractor] Starting SDK metadata extraction");
     const sdkQuery = query({
       prompt: "hello",
       options: {
@@ -3174,19 +3171,19 @@ async function extractSDKMetadata() {
           tools: systemMessage.tools,
           slashCommands: systemMessage.slash_commands
         };
-        api.logger.debug("[metadataExtractor] Captured SDK metadata:", metadata);
+        logger.debug("[metadataExtractor] Captured SDK metadata:", metadata);
         abortController.abort();
         return metadata;
       }
     }
-    api.logger.debug("[metadataExtractor] No init message received from SDK");
+    logger.debug("[metadataExtractor] No init message received from SDK");
     return {};
   } catch (error) {
     if (error instanceof Error && error.name === "AbortError") {
-      api.logger.debug("[metadataExtractor] SDK query aborted after capturing metadata");
+      logger.debug("[metadataExtractor] SDK query aborted after capturing metadata");
       return {};
     }
-    api.logger.debug("[metadataExtractor] Error extracting SDK metadata:", error);
+    logger.debug("[metadataExtractor] Error extracting SDK metadata:", error);
     return {};
   }
 }
@@ -3196,18 +3193,18 @@ function extractSDKMetadataAsync(onComplete) {
       onComplete(metadata);
     }
   }).catch((error) => {
-    api.logger.debug("[metadataExtractor] Async extraction failed:", error);
+    logger.debug("[metadataExtractor] Async extraction failed:", error);
   });
 }
 
 async function startHookServer(options) {
   const { onSessionHook } = options;
   return new Promise((resolve, reject) => {
-    const server = node_http.createServer(async (req, res) => {
+    const server = createServer(async (req, res) => {
       if (req.method === "POST" && req.url === "/hook/session-start") {
         const timeout = setTimeout(() => {
           if (!res.headersSent) {
-            api.logger.debug("[hookServer] Request timeout");
+            logger.debug("[hookServer] Request timeout");
             res.writeHead(408).end("timeout");
           }
         }, 5e3);
@@ -3218,24 +3215,24 @@ async function startHookServer(options) {
           }
           clearTimeout(timeout);
           const body = Buffer.concat(chunks).toString("utf-8");
-          api.logger.debug("[hookServer] Received session hook:", body);
+          logger.debug("[hookServer] Received session hook:", body);
           let data = {};
           try {
             data = JSON.parse(body);
           } catch (parseError) {
-            api.logger.debug("[hookServer] Failed to parse hook data as JSON:", parseError);
+            logger.debug("[hookServer] Failed to parse hook data as JSON:", parseError);
           }
           const sessionId = data.session_id || data.sessionId;
           if (sessionId) {
-            api.logger.debug(`[hookServer] Session hook received session ID: ${sessionId}`);
+            logger.debug(`[hookServer] Session hook received session ID: ${sessionId}`);
             onSessionHook(sessionId, data);
           } else {
-            api.logger.debug("[hookServer] Session hook received but no session_id found in data");
+            logger.debug("[hookServer] Session hook received but no session_id found in data");
           }
           res.writeHead(200, { "Content-Type": "text/plain" }).end("ok");
         } catch (error) {
           clearTimeout(timeout);
-          api.logger.debug("[hookServer] Error handling session hook:", error);
+          logger.debug("[hookServer] Error handling session hook:", error);
           if (!res.headersSent) {
             res.writeHead(500).end("error");
           }
@@ -3251,28 +3248,28 @@ async function startHookServer(options) {
         return;
       }
       const port = address.port;
-      api.logger.debug(`[hookServer] Started on port ${port}`);
+      logger.debug(`[hookServer] Started on port ${port}`);
       resolve({
         port,
         stop: () => {
           server.close();
-          api.logger.debug("[hookServer] Stopped");
+          logger.debug("[hookServer] Stopped");
         }
       });
     });
     server.on("error", (err) => {
-      api.logger.debug("[hookServer] Server error:", err);
+      logger.debug("[hookServer] Server error:", err);
       reject(err);
     });
   });
 }
 
 function generateHookSettingsFile(port) {
-  const hooksDir = node_path.join(api.configuration.happyHomeDir, "tmp", "hooks");
-  fs.mkdirSync(hooksDir, { recursive: true });
+  const hooksDir = join(configuration.happyHomeDir, "tmp", "hooks");
+  mkdirSync(hooksDir, { recursive: true });
   const filename = `session-hook-${process.pid}.json`;
-  const filepath = node_path.join(hooksDir, filename);
-  const forwarderScript = node_path.resolve(api.projectPath(), "scripts", "session_hook_forwarder.cjs");
+  const filepath = join(hooksDir, filename);
+  const forwarderScript = resolve(projectPath(), "scripts", "session_hook_forwarder.cjs");
   const hookCommand = `node "${forwarderScript}" ${port}`;
   const settings = {
     hooks: {
@@ -3289,55 +3286,55 @@ function generateHookSettingsFile(port) {
       ]
     }
   };
-  fs.writeFileSync(filepath, JSON.stringify(settings, null, 2));
-  api.logger.debug(`[generateHookSettings] Created hook settings file: ${filepath}`);
+  writeFileSync(filepath, JSON.stringify(settings, null, 2));
+  logger.debug(`[generateHookSettings] Created hook settings file: ${filepath}`);
   return filepath;
 }
 function cleanupHookSettingsFile(filepath) {
   try {
-    if (fs.existsSync(filepath)) {
-      fs.unlinkSync(filepath);
-      api.logger.debug(`[generateHookSettings] Cleaned up hook settings file: ${filepath}`);
+    if (existsSync(filepath)) {
+      unlinkSync(filepath);
+      logger.debug(`[generateHookSettings] Cleaned up hook settings file: ${filepath}`);
     }
   } catch (error) {
-    api.logger.debug(`[generateHookSettings] Failed to cleanup hook settings file: ${error}`);
+    logger.debug(`[generateHookSettings] Failed to cleanup hook settings file: ${error}`);
   }
 }
 
 async function runClaude(credentials, options = {}) {
-  api.logger.debug(`[CLAUDE] ===== CLAUDE MODE STARTING =====`);
-  api.logger.debug(`[CLAUDE] This is the Claude agent, NOT Gemini`);
+  logger.debug(`[CLAUDE] ===== CLAUDE MODE STARTING =====`);
+  logger.debug(`[CLAUDE] This is the Claude agent, NOT Gemini`);
   const workingDirectory = process.cwd();
-  const sessionTag = node_crypto.randomUUID();
-  api.logger.debugLargeJson("[START] Happy process started", api.getEnvironmentInfo());
-  api.logger.debug(`[START] Options: startedBy=${options.startedBy}, startingMode=${options.startingMode}`);
+  const sessionTag = randomUUID();
+  logger.debugLargeJson("[START] Happy process started", getEnvironmentInfo());
+  logger.debug(`[START] Options: startedBy=${options.startedBy}, startingMode=${options.startingMode}`);
   if (options.startedBy === "daemon" && options.startingMode === "local") {
     throw new Error("Daemon-spawned sessions cannot use local/interactive mode. Use --happy-starting-mode remote or spawn sessions directly from terminal.");
   }
-  api.connectionState.setBackend("Claude");
-  const api$1 = await api.ApiClient.create(credentials);
+  connectionState.setBackend("Claude");
+  const api = await ApiClient.create(credentials);
   let state = {};
-  const settings = await api.readSettings();
+  const settings = await readSettings();
   let machineId = settings?.machineId;
   if (!machineId) {
     console.error(`[START] No machine ID found in settings, which is unexpected since authAndSetupMachineIfNeeded should have created it. Please report this issue on https://github.com/slopus/happy-cli/issues`);
     process.exit(1);
   }
-  api.logger.debug(`Using machineId: ${machineId}`);
-  await api$1.getOrCreateMachine({
+  logger.debug(`Using machineId: ${machineId}`);
+  await api.getOrCreateMachine({
     machineId,
-    metadata: api.initialMachineMetadata
+    metadata: initialMachineMetadata
   });
   let metadata = {
     path: workingDirectory,
     host: os.hostname(),
-    version: api.packageJson.version,
+    version: packageJson.version,
     os: os.platform(),
     machineId,
     homeDir: os.homedir(),
-    happyHomeDir: api.configuration.happyHomeDir,
-    happyLibDir: api.projectPath(),
-    happyToolsDir: node_path.resolve(api.projectPath(), "tools", "unpacked"),
+    happyHomeDir: configuration.happyHomeDir,
+    happyLibDir: projectPath(),
+    happyToolsDir: resolve(projectPath(), "tools", "unpacked"),
     startedFromDaemon: options.startedBy === "daemon",
     hostPid: process.pid,
     startedBy: options.startedBy || "terminal",
@@ -3346,15 +3343,15 @@ async function runClaude(credentials, options = {}) {
     lifecycleStateSince: Date.now(),
     flavor: "claude"
   };
-  const response = await api$1.getOrCreateSession({ tag: sessionTag, metadata, state });
+  const response = await api.getOrCreateSession({ tag: sessionTag, metadata, state });
   if (!response) {
     let offlineSessionId = null;
-    const reconnection = api.startOfflineReconnection({
-      serverUrl: api.configuration.serverUrl,
+    const reconnection = startOfflineReconnection({
+      serverUrl: configuration.serverUrl,
       onReconnected: async () => {
-        const resp = await api$1.getOrCreateSession({ tag: node_crypto.randomUUID(), metadata, state });
+        const resp = await api.getOrCreateSession({ tag: randomUUID(), metadata, state });
         if (!resp) throw new Error("Server unavailable");
-        const session2 = api$1.sessionSyncClient(resp);
+        const session2 = api.sessionSyncClient(resp);
         const scanner = await createSessionScanner({
           sessionId: null,
           workingDirectory,
@@ -3384,66 +3381,66 @@ async function runClaude(credentials, options = {}) {
       });
     } finally {
       reconnection.cancel();
-      api.stopCaffeinate();
+      stopCaffeinate();
     }
     process.exit(0);
   }
-  api.logger.debug(`Session created: ${response.id}`);
+  logger.debug(`Session created: ${response.id}`);
   try {
-    api.logger.debug(`[START] Reporting session ${response.id} to daemon`);
-    const result = await api.notifyDaemonSessionStarted(response.id, metadata);
+    logger.debug(`[START] Reporting session ${response.id} to daemon`);
+    const result = await notifyDaemonSessionStarted(response.id, metadata);
     if (result.error) {
-      api.logger.debug(`[START] Failed to report to daemon (may not be running):`, result.error);
+      logger.debug(`[START] Failed to report to daemon (may not be running):`, result.error);
     } else {
-      api.logger.debug(`[START] Reported session ${response.id} to daemon`);
+      logger.debug(`[START] Reported session ${response.id} to daemon`);
     }
   } catch (error) {
-    api.logger.debug("[START] Failed to report to daemon (may not be running):", error);
+    logger.debug("[START] Failed to report to daemon (may not be running):", error);
   }
   extractSDKMetadataAsync(async (sdkMetadata) => {
-    api.logger.debug("[start] SDK metadata extracted, updating session:", sdkMetadata);
+    logger.debug("[start] SDK metadata extracted, updating session:", sdkMetadata);
     try {
-      api$1.sessionSyncClient(response).updateMetadata((currentMetadata) => ({
+      api.sessionSyncClient(response).updateMetadata((currentMetadata) => ({
         ...currentMetadata,
         tools: sdkMetadata.tools,
         slashCommands: sdkMetadata.slashCommands
       }));
-      api.logger.debug("[start] Session metadata updated with SDK capabilities");
+      logger.debug("[start] Session metadata updated with SDK capabilities");
     } catch (error) {
-      api.logger.debug("[start] Failed to update session metadata:", error);
+      logger.debug("[start] Failed to update session metadata:", error);
     }
   });
-  const session = api$1.sessionSyncClient(response);
-  const happyServer = await api.startHappyServer(session);
-  api.logger.debug(`[START] Happy MCP server started at ${happyServer.url}`);
+  const session = api.sessionSyncClient(response);
+  const happyServer = await startHappyServer(session);
+  logger.debug(`[START] Happy MCP server started at ${happyServer.url}`);
   let currentSession = null;
   const hookServer = await startHookServer({
     onSessionHook: (sessionId, data) => {
-      api.logger.debug(`[START] Session hook received: ${sessionId}`, data);
+      logger.debug(`[START] Session hook received: ${sessionId}`, data);
       if (currentSession) {
         const previousSessionId = currentSession.sessionId;
         if (previousSessionId !== sessionId) {
-          api.logger.debug(`[START] Claude session ID changed: ${previousSessionId} -> ${sessionId}`);
+          logger.debug(`[START] Claude session ID changed: ${previousSessionId} -> ${sessionId}`);
           currentSession.onSessionFound(sessionId);
         }
       }
     }
   });
-  api.logger.debug(`[START] Hook server started on port ${hookServer.port}`);
+  logger.debug(`[START] Hook server started on port ${hookServer.port}`);
   const hookSettingsPath = generateHookSettingsFile(hookServer.port);
-  api.logger.debug(`[START] Generated hook settings file: ${hookSettingsPath}`);
-  const logPath = api.logger.logFilePath;
-  api.logger.infoDeveloper(`Session: ${response.id}`);
-  api.logger.infoDeveloper(`Logs: ${logPath}`);
+  logger.debug(`[START] Generated hook settings file: ${hookSettingsPath}`);
+  const logPath = logger.logFilePath;
+  logger.infoDeveloper(`Session: ${response.id}`);
+  logger.infoDeveloper(`Logs: ${logPath}`);
   session.updateAgentState((currentState) => ({
     ...currentState,
     controlledByUser: options.startingMode !== "remote"
   }));
-  const caffeinateStarted = api.startCaffeinate();
+  const caffeinateStarted = startCaffeinate();
   if (caffeinateStarted) {
-    api.logger.infoDeveloper("Sleep prevention enabled (macOS)");
+    logger.infoDeveloper("Sleep prevention enabled (macOS)");
   }
-  const messageQueue = new api.MessageQueue2((mode) => api.hashObject({
+  const messageQueue = new MessageQueue2((mode) => hashObject({
     isPlan: mode.permissionMode === "plan",
     model: mode.model,
     fallbackModel: mode.fallbackModel,
@@ -3464,61 +3461,61 @@ async function runClaude(credentials, options = {}) {
     if (message.meta?.permissionMode) {
       messagePermissionMode = message.meta.permissionMode;
       currentPermissionMode = messagePermissionMode;
-      api.logger.debug(`[loop] Permission mode updated from user message to: ${currentPermissionMode}`);
+      logger.debug(`[loop] Permission mode updated from user message to: ${currentPermissionMode}`);
     } else {
-      api.logger.debug(`[loop] User message received with no permission mode override, using current: ${currentPermissionMode}`);
+      logger.debug(`[loop] User message received with no permission mode override, using current: ${currentPermissionMode}`);
     }
     let messageModel = currentModel;
     if (message.meta?.hasOwnProperty("model")) {
       messageModel = message.meta.model || void 0;
       currentModel = messageModel;
-      api.logger.debug(`[loop] Model updated from user message: ${messageModel || "reset to default"}`);
+      logger.debug(`[loop] Model updated from user message: ${messageModel || "reset to default"}`);
     } else {
-      api.logger.debug(`[loop] User message received with no model override, using current: ${currentModel || "default"}`);
+      logger.debug(`[loop] User message received with no model override, using current: ${currentModel || "default"}`);
     }
     let messageCustomSystemPrompt = currentCustomSystemPrompt;
     if (message.meta?.hasOwnProperty("customSystemPrompt")) {
       messageCustomSystemPrompt = message.meta.customSystemPrompt || void 0;
       currentCustomSystemPrompt = messageCustomSystemPrompt;
-      api.logger.debug(`[loop] Custom system prompt updated from user message: ${messageCustomSystemPrompt ? "set" : "reset to none"}`);
+      logger.debug(`[loop] Custom system prompt updated from user message: ${messageCustomSystemPrompt ? "set" : "reset to none"}`);
     } else {
-      api.logger.debug(`[loop] User message received with no custom system prompt override, using current: ${currentCustomSystemPrompt ? "set" : "none"}`);
+      logger.debug(`[loop] User message received with no custom system prompt override, using current: ${currentCustomSystemPrompt ? "set" : "none"}`);
     }
     let messageFallbackModel = currentFallbackModel;
     if (message.meta?.hasOwnProperty("fallbackModel")) {
       messageFallbackModel = message.meta.fallbackModel || void 0;
       currentFallbackModel = messageFallbackModel;
-      api.logger.debug(`[loop] Fallback model updated from user message: ${messageFallbackModel || "reset to none"}`);
+      logger.debug(`[loop] Fallback model updated from user message: ${messageFallbackModel || "reset to none"}`);
     } else {
-      api.logger.debug(`[loop] User message received with no fallback model override, using current: ${currentFallbackModel || "none"}`);
+      logger.debug(`[loop] User message received with no fallback model override, using current: ${currentFallbackModel || "none"}`);
     }
     let messageAppendSystemPrompt = currentAppendSystemPrompt;
     if (message.meta?.hasOwnProperty("appendSystemPrompt")) {
       messageAppendSystemPrompt = message.meta.appendSystemPrompt || void 0;
       currentAppendSystemPrompt = messageAppendSystemPrompt;
-      api.logger.debug(`[loop] Append system prompt updated from user message: ${messageAppendSystemPrompt ? "set" : "reset to none"}`);
+      logger.debug(`[loop] Append system prompt updated from user message: ${messageAppendSystemPrompt ? "set" : "reset to none"}`);
     } else {
-      api.logger.debug(`[loop] User message received with no append system prompt override, using current: ${currentAppendSystemPrompt ? "set" : "none"}`);
+      logger.debug(`[loop] User message received with no append system prompt override, using current: ${currentAppendSystemPrompt ? "set" : "none"}`);
     }
     let messageAllowedTools = currentAllowedTools;
     if (message.meta?.hasOwnProperty("allowedTools")) {
       messageAllowedTools = message.meta.allowedTools || void 0;
       currentAllowedTools = messageAllowedTools;
-      api.logger.debug(`[loop] Allowed tools updated from user message: ${messageAllowedTools ? messageAllowedTools.join(", ") : "reset to none"}`);
+      logger.debug(`[loop] Allowed tools updated from user message: ${messageAllowedTools ? messageAllowedTools.join(", ") : "reset to none"}`);
     } else {
-      api.logger.debug(`[loop] User message received with no allowed tools override, using current: ${currentAllowedTools ? currentAllowedTools.join(", ") : "none"}`);
+      logger.debug(`[loop] User message received with no allowed tools override, using current: ${currentAllowedTools ? currentAllowedTools.join(", ") : "none"}`);
     }
     let messageDisallowedTools = currentDisallowedTools;
     if (message.meta?.hasOwnProperty("disallowedTools")) {
       messageDisallowedTools = message.meta.disallowedTools || void 0;
       currentDisallowedTools = messageDisallowedTools;
-      api.logger.debug(`[loop] Disallowed tools updated from user message: ${messageDisallowedTools ? messageDisallowedTools.join(", ") : "reset to none"}`);
+      logger.debug(`[loop] Disallowed tools updated from user message: ${messageDisallowedTools ? messageDisallowedTools.join(", ") : "reset to none"}`);
     } else {
-      api.logger.debug(`[loop] User message received with no disallowed tools override, using current: ${currentDisallowedTools ? currentDisallowedTools.join(", ") : "none"}`);
+      logger.debug(`[loop] User message received with no disallowed tools override, using current: ${currentDisallowedTools ? currentDisallowedTools.join(", ") : "none"}`);
     }
     const specialCommand = parseSpecialCommand(message.content.text);
     if (specialCommand.type === "compact") {
-      api.logger.debug("[start] Detected /compact command");
+      logger.debug("[start] Detected /compact command");
       const enhancedMode2 = {
         permissionMode: messagePermissionMode || "default",
         model: messageModel,
@@ -3529,11 +3526,11 @@ async function runClaude(credentials, options = {}) {
         disallowedTools: messageDisallowedTools
       };
       messageQueue.pushIsolateAndClear(specialCommand.originalMessage || message.content.text, enhancedMode2);
-      api.logger.debugLargeJson("[start] /compact command pushed to queue:", message);
+      logger.debugLargeJson("[start] /compact command pushed to queue:", message);
       return;
     }
     if (specialCommand.type === "clear") {
-      api.logger.debug("[start] Detected /clear command");
+      logger.debug("[start] Detected /clear command");
       const enhancedMode2 = {
         permissionMode: messagePermissionMode || "default",
         model: messageModel,
@@ -3544,7 +3541,7 @@ async function runClaude(credentials, options = {}) {
         disallowedTools: messageDisallowedTools
       };
       messageQueue.pushIsolateAndClear(specialCommand.originalMessage || message.content.text, enhancedMode2);
-      api.logger.debugLargeJson("[start] /compact command pushed to queue:", message);
+      logger.debugLargeJson("[start] /compact command pushed to queue:", message);
       return;
     }
     const enhancedMode = {
@@ -3557,10 +3554,10 @@ async function runClaude(credentials, options = {}) {
       disallowedTools: messageDisallowedTools
     };
     messageQueue.push(message.content.text, enhancedMode);
-    api.logger.debugLargeJson("User message pushed to queue:", message);
+    logger.debugLargeJson("User message pushed to queue:", message);
   });
   const cleanup = async () => {
-    api.logger.debug("[START] Received termination signal, cleaning up...");
+    logger.debug("[START] Received termination signal, cleaning up...");
     try {
       if (session) {
         session.updateMetadata((currentMetadata) => ({
@@ -3575,35 +3572,35 @@ async function runClaude(credentials, options = {}) {
         await session.flush();
         await session.close();
       }
-      api.stopCaffeinate();
+      stopCaffeinate();
       happyServer.stop();
       hookServer.stop();
       cleanupHookSettingsFile(hookSettingsPath);
-      api.logger.debug("[START] Cleanup complete, exiting");
+      logger.debug("[START] Cleanup complete, exiting");
       process.exit(0);
     } catch (error) {
-      api.logger.debug("[START] Error during cleanup:", error);
+      logger.debug("[START] Error during cleanup:", error);
       process.exit(1);
     }
   };
   process.on("SIGTERM", cleanup);
   process.on("SIGINT", cleanup);
   process.on("uncaughtException", (error) => {
-    api.logger.debug("[START] Uncaught exception:", error);
+    logger.debug("[START] Uncaught exception:", error);
     cleanup();
   });
   process.on("unhandledRejection", (reason) => {
-    api.logger.debug("[START] Unhandled rejection:", reason);
+    logger.debug("[START] Unhandled rejection:", reason);
     cleanup();
   });
-  api.registerKillSessionHandler(session.rpcHandlerManager, cleanup);
+  registerKillSessionHandler(session.rpcHandlerManager, cleanup);
   await loop({
     path: workingDirectory,
     model: options.model,
     permissionMode: options.permissionMode,
     startingMode: options.startingMode,
     messageQueue,
-    api: api$1,
+    api,
     allowedTools: happyServer.toolNames.map((toolName) => `mcp__happy__${toolName}`),
     onModeChange: (newMode) => {
       session.sendSessionEvent({ type: "switch", mode: newMode });
@@ -3629,17 +3626,17 @@ async function runClaude(credentials, options = {}) {
   });
   currentSession?.cleanup();
   session.sendSessionDeath();
-  api.logger.debug("Waiting for socket to flush...");
+  logger.debug("Waiting for socket to flush...");
   await session.flush();
-  api.logger.debug("Closing session...");
+  logger.debug("Closing session...");
   await session.close();
-  api.stopCaffeinate();
-  api.logger.debug("Stopped sleep prevention");
+  stopCaffeinate();
+  logger.debug("Stopped sleep prevention");
   happyServer.stop();
-  api.logger.debug("Stopped Happy MCP server");
+  logger.debug("Stopped Happy MCP server");
   hookServer.stop();
   cleanupHookSettingsFile(hookSettingsPath);
-  api.logger.debug("Stopped Hook server and cleaned up settings file");
+  logger.debug("Stopped Hook server and cleaned up settings file");
   process.exit(0);
 }
 
@@ -3647,9 +3644,9 @@ const PLIST_LABEL$1 = "com.happy-cli.daemon";
 const PLIST_FILE$1 = `/Library/LaunchDaemons/${PLIST_LABEL$1}.plist`;
 async function install$1() {
   try {
-    if (fs$2.existsSync(PLIST_FILE$1)) {
-      api.logger.info("Daemon plist already exists. Uninstalling first...");
-      child_process.execSync(`launchctl unload ${PLIST_FILE$1}`, { stdio: "inherit" });
+    if (existsSync$1(PLIST_FILE$1)) {
+      logger.info("Daemon plist already exists. Uninstalling first...");
+      execSync$1(`launchctl unload ${PLIST_FILE$1}`, { stdio: "inherit" });
     }
     const happyPath = process.argv[0];
     const scriptPath = process.argv[1];
@@ -3691,14 +3688,14 @@ async function install$1() {
             </dict>
             </plist>
         `);
-    fs$2.writeFileSync(PLIST_FILE$1, plistContent);
-    fs$2.chmodSync(PLIST_FILE$1, 420);
-    api.logger.info(`Created daemon plist at ${PLIST_FILE$1}`);
-    child_process.execSync(`launchctl load ${PLIST_FILE$1}`, { stdio: "inherit" });
-    api.logger.info("Daemon installed and started successfully");
-    api.logger.info("Check logs at ~/.happy/daemon.log");
+    writeFileSync$1(PLIST_FILE$1, plistContent);
+    chmodSync(PLIST_FILE$1, 420);
+    logger.info(`Created daemon plist at ${PLIST_FILE$1}`);
+    execSync$1(`launchctl load ${PLIST_FILE$1}`, { stdio: "inherit" });
+    logger.info("Daemon installed and started successfully");
+    logger.info("Check logs at ~/.happy/daemon.log");
   } catch (error) {
-    api.logger.debug("Failed to install daemon:", error);
+    logger.debug("Failed to install daemon:", error);
     throw error;
   }
 }
@@ -3710,7 +3707,7 @@ async function install() {
   if (process.getuid && process.getuid() !== 0) {
     throw new Error("Daemon installation requires sudo privileges. Please run with sudo.");
   }
-  api.logger.info("Installing Happy CLI daemon for macOS...");
+  logger.info("Installing Happy CLI daemon for macOS...");
   await install$1();
 }
 
@@ -3718,21 +3715,21 @@ const PLIST_LABEL = "com.happy-cli.daemon";
 const PLIST_FILE = `/Library/LaunchDaemons/${PLIST_LABEL}.plist`;
 async function uninstall$1() {
   try {
-    if (!fs$2.existsSync(PLIST_FILE)) {
-      api.logger.info("Daemon plist not found. Nothing to uninstall.");
+    if (!existsSync$1(PLIST_FILE)) {
+      logger.info("Daemon plist not found. Nothing to uninstall.");
       return;
     }
     try {
-      child_process.execSync(`launchctl unload ${PLIST_FILE}`, { stdio: "inherit" });
-      api.logger.info("Daemon stopped successfully");
+      execSync$1(`launchctl unload ${PLIST_FILE}`, { stdio: "inherit" });
+      logger.info("Daemon stopped successfully");
     } catch (error) {
-      api.logger.info("Failed to unload daemon (it might not be running)");
+      logger.info("Failed to unload daemon (it might not be running)");
     }
-    fs$2.unlinkSync(PLIST_FILE);
-    api.logger.info(`Removed daemon plist from ${PLIST_FILE}`);
-    api.logger.info("Daemon uninstalled successfully");
+    unlinkSync$1(PLIST_FILE);
+    logger.info(`Removed daemon plist from ${PLIST_FILE}`);
+    logger.info("Daemon uninstalled successfully");
   } catch (error) {
-    api.logger.debug("Failed to uninstall daemon:", error);
+    logger.debug("Failed to uninstall daemon:", error);
     throw error;
   }
 }
@@ -3744,7 +3741,7 @@ async function uninstall() {
   if (process.getuid && process.getuid() !== 0) {
     throw new Error("Daemon uninstallation requires sudo privileges. Please run with sudo.");
   }
-  api.logger.info("Uninstalling Happy CLI daemon for macOS...");
+  logger.info("Uninstalling Happy CLI daemon for macOS...");
   await uninstall$1();
 }
 
@@ -3798,21 +3795,21 @@ async function handleAuthLogin(args) {
     console.log(chalk.gray("  \u2022 Stop daemon if running"));
     console.log(chalk.gray("  \u2022 Re-authenticate and register machine\n"));
     try {
-      api.logger.debug("Stopping daemon for force auth...");
-      await api.stopDaemon();
+      logger.debug("Stopping daemon for force auth...");
+      await stopDaemon();
       console.log(chalk.gray("\u2713 Stopped daemon"));
     } catch (error) {
-      api.logger.debug("Daemon was not running or failed to stop:", error);
+      logger.debug("Daemon was not running or failed to stop:", error);
     }
-    await api.clearCredentials();
+    await clearCredentials();
     console.log(chalk.gray("\u2713 Cleared credentials"));
-    await api.clearMachineId();
+    await clearMachineId();
     console.log(chalk.gray("\u2713 Cleared machine ID"));
     console.log("");
   }
   if (!forceAuth) {
-    const existingCreds = await api.readCredentials();
-    const settings = await api.readSettings();
+    const existingCreds = await readCredentials();
+    const settings = await readSettings();
     if (existingCreds && settings?.machineId) {
       console.log(chalk.green("\u2713 Already authenticated"));
       console.log(chalk.gray(`  Machine ID: ${settings.machineId}`));
@@ -3826,7 +3823,7 @@ async function handleAuthLogin(args) {
     }
   }
   try {
-    const result = await api.authAndSetupMachineIfNeeded();
+    const result = await authAndSetupMachineIfNeeded();
     console.log(chalk.green("\n\u2713 Authentication successful"));
     console.log(chalk.gray(`  Machine ID: ${result.machineId}`));
   } catch (error) {
@@ -3835,15 +3832,15 @@ async function handleAuthLogin(args) {
   }
 }
 async function handleAuthLogout() {
-  const happyDir = api.configuration.happyHomeDir;
-  const credentials = await api.readCredentials();
+  const happyDir = configuration.happyHomeDir;
+  const credentials = await readCredentials();
   if (!credentials) {
     console.log(chalk.yellow("Not currently authenticated"));
     return;
   }
   console.log(chalk.blue("This will log you out of Happy"));
   console.log(chalk.yellow("\u26A0\uFE0F  You will need to re-authenticate to use Happy again"));
-  const rl = node_readline.createInterface({
+  const rl = createInterface({
     input: process.stdin,
     output: process.stdout
   });
@@ -3854,12 +3851,12 @@ async function handleAuthLogout() {
   if (answer.toLowerCase() === "y" || answer.toLowerCase() === "yes") {
     try {
       try {
-        await api.stopDaemon();
+        await stopDaemon();
         console.log(chalk.gray("Stopped daemon"));
       } catch {
       }
-      if (fs.existsSync(happyDir)) {
-        fs.rmSync(happyDir, { recursive: true, force: true });
+      if (existsSync(happyDir)) {
+        rmSync(happyDir, { recursive: true, force: true });
       }
       console.log(chalk.green("\u2713 Successfully logged out"));
       console.log(chalk.gray('  Run "happy auth login" to authenticate again'));
@@ -3871,8 +3868,8 @@ async function handleAuthLogout() {
   }
 }
 async function handleAuthStatus() {
-  const credentials = await api.readCredentials();
-  const settings = await api.readSettings();
+  const credentials = await readCredentials();
+  const settings = await readSettings();
   console.log(chalk.bold("\nAuthentication Status\n"));
   if (!credentials) {
     console.log(chalk.red("\u2717 Not authenticated"));
@@ -3891,9 +3888,9 @@ async function handleAuthStatus() {
     console.log(chalk.gray('  Run "happy auth login --force" to fix this'));
   }
   console.log(chalk.gray(`
-  Data directory: ${api.configuration.happyHomeDir}`));
+  Data directory: ${configuration.happyHomeDir}`));
   try {
-    const running = await api.checkIfDaemonRunningAndCleanupStaleState();
+    const running = await checkIfDaemonRunningAndCleanupStaleState();
     if (running) {
       console.log(chalk.green("\u2713 Daemon running"));
     } else {
@@ -3908,12 +3905,12 @@ const CLIENT_ID$2 = "app_EMoamEEZ73f0CkXaXp7hrann";
 const AUTH_BASE_URL = "https://auth.openai.com";
 const DEFAULT_PORT$2 = 1455;
 function generatePKCE$2() {
-  const verifier = crypto.randomBytes(32).toString("base64url").replace(/[^a-zA-Z0-9\-._~]/g, "");
-  const challenge = crypto.createHash("sha256").update(verifier).digest("base64url").replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+  const verifier = randomBytes(32).toString("base64url").replace(/[^a-zA-Z0-9\-._~]/g, "");
+  const challenge = createHash("sha256").update(verifier).digest("base64url").replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
   return { verifier, challenge };
 }
 function generateState$2() {
-  return crypto.randomBytes(16).toString("hex");
+  return randomBytes(16).toString("hex");
 }
 function parseJWT(token) {
   const parts = token.split(".");
@@ -3925,7 +3922,7 @@ function parseJWT(token) {
 }
 async function findAvailablePort$2() {
   return new Promise((resolve) => {
-    const server = http.createServer();
+    const server = createServer$1();
     server.listen(0, "127.0.0.1", () => {
       const port = server.address().port;
       server.close(() => resolve(port));
@@ -3934,7 +3931,7 @@ async function findAvailablePort$2() {
 }
 async function isPortAvailable$2(port) {
   return new Promise((resolve) => {
-    const testServer = http.createServer();
+    const testServer = createServer$1();
     testServer.once("error", () => {
       testServer.close();
       resolve(false);
@@ -3980,7 +3977,7 @@ async function exchangeCodeForTokens$2(code, verifier, port) {
 }
 async function startCallbackServer$2(state, verifier, port) {
   return new Promise((resolve, reject) => {
-    const server = http.createServer(async (req, res) => {
+    const server = createServer$1(async (req, res) => {
       const url = new URL(req.url, `http://localhost:${port}`);
       if (url.pathname === "/auth/callback") {
         const code = url.searchParams.get("code");
@@ -4057,7 +4054,7 @@ async function authenticateCodex() {
   console.log(`If browser doesn't open, visit:
 ${authUrl}
 `);
-  await api.openBrowser(authUrl);
+  await openBrowser(authUrl);
   const tokens = await serverPromise;
   console.log("\u{1F389} Authentication successful!");
   return tokens;
@@ -4069,16 +4066,16 @@ const TOKEN_URL$1 = "https://console.anthropic.com/v1/oauth/token";
 const DEFAULT_PORT$1 = 54545;
 const SCOPE = "user:inference";
 function generatePKCE$1() {
-  const verifier = crypto.randomBytes(32).toString("base64url").replace(/[^a-zA-Z0-9\-._~]/g, "");
-  const challenge = crypto.createHash("sha256").update(verifier).digest("base64url").replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+  const verifier = randomBytes(32).toString("base64url").replace(/[^a-zA-Z0-9\-._~]/g, "");
+  const challenge = createHash("sha256").update(verifier).digest("base64url").replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
   return { verifier, challenge };
 }
 function generateState$1() {
-  return crypto.randomBytes(32).toString("base64url");
+  return randomBytes(32).toString("base64url");
 }
 async function findAvailablePort$1() {
   return new Promise((resolve) => {
-    const server = http.createServer();
+    const server = createServer$1();
     server.listen(0, "127.0.0.1", () => {
       const port = server.address().port;
       server.close(() => resolve(port));
@@ -4087,7 +4084,7 @@ async function findAvailablePort$1() {
 }
 async function isPortAvailable$1(port) {
   return new Promise((resolve) => {
-    const testServer = http.createServer();
+    const testServer = createServer$1();
     testServer.once("error", () => {
       testServer.close();
       resolve(false);
@@ -4124,7 +4121,7 @@ async function exchangeCodeForTokens$1(code, verifier, port, state) {
 }
 async function startCallbackServer$1(state, verifier, port) {
   return new Promise((resolve, reject) => {
-    const server = http.createServer(async (req, res) => {
+    const server = createServer$1(async (req, res) => {
       const url = new URL(req.url, `http://localhost:${port}`);
       if (url.pathname === "/callback") {
         const code = url.searchParams.get("code");
@@ -4198,7 +4195,7 @@ async function authenticateClaude() {
   console.log();
   console.log(`${authUrl}`);
   console.log();
-  await api.openBrowser(authUrl);
+  await openBrowser(authUrl);
   try {
     const tokens = await serverPromise;
     console.log("\u{1F389} Authentication successful!");
@@ -4210,7 +4207,7 @@ async function authenticateClaude() {
   }
 }
 
-const execAsync = util.promisify(child_process.exec);
+const execAsync = promisify(exec);
 const CLIENT_ID = "681255809395-oo8ft2oprdrnp9e3aqf6av3hmdib135j.apps.googleusercontent.com";
 const CLIENT_SECRET = "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";
 const AUTHORIZE_URL = "https://accounts.google.com/o/oauth2/v2/auth";
@@ -4222,16 +4219,16 @@ const SCOPES = [
   "https://www.googleapis.com/auth/userinfo.profile"
 ].join(" ");
 function generatePKCE() {
-  const verifier = crypto.randomBytes(32).toString("base64url").replace(/[^a-zA-Z0-9\-._~]/g, "");
-  const challenge = crypto.createHash("sha256").update(verifier).digest("base64url").replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+  const verifier = randomBytes(32).toString("base64url").replace(/[^a-zA-Z0-9\-._~]/g, "");
+  const challenge = createHash("sha256").update(verifier).digest("base64url").replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
   return { verifier, challenge };
 }
 function generateState() {
-  return crypto.randomBytes(32).toString("hex");
+  return randomBytes(32).toString("hex");
 }
 async function findAvailablePort() {
   return new Promise((resolve) => {
-    const server = http.createServer();
+    const server = createServer$1();
     server.listen(0, "127.0.0.1", () => {
       const port = server.address().port;
       server.close(() => resolve(port));
@@ -4240,7 +4237,7 @@ async function findAvailablePort() {
 }
 async function isPortAvailable(port) {
   return new Promise((resolve) => {
-    const testServer = http.createServer();
+    const testServer = createServer$1();
     testServer.once("error", () => {
       testServer.close();
       resolve(false);
@@ -4274,7 +4271,7 @@ async function exchangeCodeForTokens(code, verifier, port) {
 }
 async function startCallbackServer(state, verifier, port) {
   return new Promise((resolve, reject) => {
-    const server = http.createServer(async (req, res) => {
+    const server = createServer$1(async (req, res) => {
       const url = new URL(req.url, `http://localhost:${port}`);
       if (url.pathname === "/oauth2callback") {
         const code = url.searchParams.get("code");
@@ -4449,29 +4446,29 @@ async function handleConnectVendor(vendor, displayName) {
   console.log(chalk.bold(`
 \u{1F50C} Connecting ${displayName} to Happy cloud
 `));
-  const credentials = await api.readCredentials();
+  const credentials = await readCredentials();
   if (!credentials) {
     console.log(chalk.yellow("\u26A0\uFE0F  Not authenticated with Happy"));
     console.log(chalk.gray('  Please run "happy auth login" first'));
     process.exit(1);
   }
-  const api$1 = await api.ApiClient.create(credentials);
+  const api = await ApiClient.create(credentials);
   if (vendor === "codex") {
     console.log("\u{1F680} Registering Codex token with server");
     const codexAuthTokens = await authenticateCodex();
-    await api$1.registerVendorToken("openai", { oauth: codexAuthTokens });
+    await api.registerVendorToken("openai", { oauth: codexAuthTokens });
     console.log("\u2705 Codex token registered with server");
     process.exit(0);
   } else if (vendor === "claude") {
     console.log("\u{1F680} Registering Anthropic token with server");
     const anthropicAuthTokens = await authenticateClaude();
-    await api$1.registerVendorToken("anthropic", { oauth: anthropicAuthTokens });
+    await api.registerVendorToken("anthropic", { oauth: anthropicAuthTokens });
     console.log("\u2705 Anthropic token registered with server");
     process.exit(0);
   } else if (vendor === "gemini") {
     console.log("\u{1F680} Registering Gemini token with server");
     const geminiAuthTokens = await authenticateGemini();
-    await api$1.registerVendorToken("gemini", { oauth: geminiAuthTokens });
+    await api.registerVendorToken("gemini", { oauth: geminiAuthTokens });
     console.log("\u2705 Gemini token registered with server");
     updateLocalGeminiCredentials(geminiAuthTokens);
     process.exit(0);
@@ -4481,13 +4478,13 @@ async function handleConnectVendor(vendor, displayName) {
 }
 async function handleConnectStatus() {
   console.log(chalk.bold("\n\u{1F50C} Connection Status\n"));
-  const credentials = await api.readCredentials();
+  const credentials = await readCredentials();
   if (!credentials) {
     console.log(chalk.yellow("\u26A0\uFE0F  Not authenticated with Happy"));
     console.log(chalk.gray('  Please run "happy auth login" first'));
     process.exit(1);
   }
-  const api$1 = await api.ApiClient.create(credentials);
+  const api = await ApiClient.create(credentials);
   const vendors = [
     { key: "gemini", name: "Gemini", display: "Google Gemini" },
     { key: "openai", name: "Codex", display: "OpenAI Codex" },
@@ -4495,7 +4492,7 @@ async function handleConnectStatus() {
   ];
   for (const vendor of vendors) {
     try {
-      const token = await api$1.getVendorToken(vendor.key);
+      const token = await api.getVendorToken(vendor.key);
       if (token?.oauth) {
         let userInfo = "";
         if (token.oauth.id_token) {
@@ -4525,10 +4522,10 @@ async function handleConnectStatus() {
 }
 function updateLocalGeminiCredentials(tokens) {
   try {
-    const geminiDir = path.join(os$1.homedir(), ".gemini");
-    const credentialsPath = path.join(geminiDir, "oauth_creds.json");
-    if (!fs$2.existsSync(geminiDir)) {
-      fs$2.mkdirSync(geminiDir, { recursive: true });
+    const geminiDir = join$1(homedir$1(), ".gemini");
+    const credentialsPath = join$1(geminiDir, "oauth_creds.json");
+    if (!existsSync$1(geminiDir)) {
+      mkdirSync$1(geminiDir, { recursive: true });
     }
     const credentials = {
       access_token: tokens.access_token,
@@ -4538,7 +4535,7 @@ function updateLocalGeminiCredentials(tokens) {
       ...tokens.id_token && { id_token: tokens.id_token },
       ...tokens.expires_in && { expires_in: tokens.expires_in }
     };
-    fs$2.writeFileSync(credentialsPath, JSON.stringify(credentials, null, 2), "utf-8");
+    writeFileSync$1(credentialsPath, JSON.stringify(credentials, null, 2), "utf-8");
     console.log(chalk.gray(`  Updated local credentials: ${credentialsPath}`));
   } catch (error) {
     console.log(chalk.yellow(`  \u26A0\uFE0F Could not update local credentials: ${error}`));
@@ -4548,20 +4545,20 @@ function updateLocalGeminiCredentials(tokens) {
 (async () => {
   const args = process.argv.slice(2);
   if (!args.includes("--version")) {
-    api.logger.debug("Starting happy CLI with args: ", process.argv);
+    logger.debug("Starting happy CLI with args: ", process.argv);
   }
   const subcommand = args[0];
   if (!args.includes("--version")) ;
   if (subcommand === "doctor") {
     if (args[1] === "clean") {
-      const result = await api.killRunawayHappyProcesses();
+      const result = await killRunawayHappyProcesses();
       console.log(`Cleaned up ${result.killed} runaway processes`);
       if (result.errors.length > 0) {
         console.log("Errors:", result.errors);
       }
       process.exit(0);
     }
-    await api.runDoctorCommand();
+    await runDoctorCommand();
     return;
   } else if (subcommand === "auth") {
     try {
@@ -4587,7 +4584,7 @@ function updateLocalGeminiCredentials(tokens) {
     return;
   } else if (subcommand === "codex") {
     try {
-      const { runCodex } = await Promise.resolve().then(function () { return require('./runCodex-DTqRGGDQ.cjs'); });
+      const { runCodex } = await import('./runCodex-DZE-jc7B.mjs');
       let startedBy = void 0;
       for (let i = 1; i < args.length; i++) {
         if (args[i] === "--started-by") {
@@ -4596,7 +4593,7 @@ function updateLocalGeminiCredentials(tokens) {
       }
       const {
         credentials
-      } = await api.authAndSetupMachineIfNeeded();
+      } = await authAndSetupMachineIfNeeded();
       await runCodex({ credentials, startedBy });
     } catch (error) {
       console.error(chalk.red("Error:"), error instanceof Error ? error.message : "Unknown error");
@@ -4680,9 +4677,9 @@ function updateLocalGeminiCredentials(tokens) {
     if (geminiSubcommand === "project" && args[2] === "set" && args[3]) {
       const projectId = args[3];
       try {
-        const { saveGoogleCloudProjectToConfig } = await Promise.resolve().then(function () { return require('./config-BsWNxAmw.cjs'); });
-        const { readCredentials: readCredentials2 } = await Promise.resolve().then(function () { return require('./registerKillSessionHandler-DvMk4CwC.cjs'); }).then(function (n) { return n.persistence; });
-        const { ApiClient: ApiClient2 } = await Promise.resolve().then(function () { return require('./registerKillSessionHandler-DvMk4CwC.cjs'); }).then(function (n) { return n.api; });
+        const { saveGoogleCloudProjectToConfig } = await import('./config-DQr1BFhk.mjs');
+        const { readCredentials: readCredentials2 } = await import('./registerKillSessionHandler-CWDCUs8P.mjs').then(function (n) { return n.Q; });
+        const { ApiClient: ApiClient2 } = await import('./registerKillSessionHandler-CWDCUs8P.mjs').then(function (n) { return n.P; });
         let userEmail = void 0;
         try {
           const credentials = await readCredentials2();
@@ -4713,7 +4710,7 @@ function updateLocalGeminiCredentials(tokens) {
     }
     if (geminiSubcommand === "project" && args[2] === "get") {
       try {
-        const { readGeminiLocalConfig } = await Promise.resolve().then(function () { return require('./config-BsWNxAmw.cjs'); });
+        const { readGeminiLocalConfig } = await import('./config-DQr1BFhk.mjs');
         const config = readGeminiLocalConfig();
         if (config.googleCloudProject) {
           console.log(`Current Google Cloud Project: ${config.googleCloudProject}`);
@@ -4753,7 +4750,7 @@ function updateLocalGeminiCredentials(tokens) {
       process.exit(0);
     }
     try {
-      const { runGemini } = await Promise.resolve().then(function () { return require('./runGemini-Ca77ndkO.cjs'); });
+      const { runGemini } = await import('./runGemini-B_U03_x7.mjs');
       let startedBy = void 0;
       for (let i = 1; i < args.length; i++) {
         if (args[i] === "--started-by") {
@@ -4762,11 +4759,11 @@ function updateLocalGeminiCredentials(tokens) {
       }
       const {
         credentials
-      } = await api.authAndSetupMachineIfNeeded();
-      api.logger.debug("Ensuring Happy background service is running & matches our version...");
-      if (!await api.isDaemonRunningCurrentlyInstalledHappyVersion()) {
-        api.logger.debug("Starting Happy background service...");
-        const daemonProcess = api.spawnHappyCLI(["daemon", "start-sync"], {
+      } = await authAndSetupMachineIfNeeded();
+      logger.debug("Ensuring Happy background service is running & matches our version...");
+      if (!await isDaemonRunningCurrentlyInstalledHappyVersion()) {
+        logger.debug("Starting Happy background service...");
+        const daemonProcess = spawnHappyCLI(["daemon", "start-sync"], {
           detached: true,
           stdio: "ignore",
           env: process.env
@@ -4810,7 +4807,7 @@ function updateLocalGeminiCredentials(tokens) {
     const daemonSubcommand = args[1];
     if (daemonSubcommand === "list") {
       try {
-        const sessions = await api.listDaemonSessions();
+        const sessions = await listDaemonSessions();
         if (sessions.length === 0) {
           console.log("No active sessions this daemon is aware of (they might have been started by a previous version of the daemon)");
         } else {
@@ -4828,14 +4825,14 @@ function updateLocalGeminiCredentials(tokens) {
         process.exit(1);
       }
       try {
-        const success = await api.stopDaemonSession(sessionId);
+        const success = await stopDaemonSession(sessionId);
         console.log(success ? "Session stopped" : "Failed to stop session");
       } catch (error) {
         console.log("No daemon running");
       }
       return;
     } else if (daemonSubcommand === "start") {
-      const child = api.spawnHappyCLI(["daemon", "start-sync"], {
+      const child = spawnHappyCLI(["daemon", "start-sync"], {
         detached: true,
         stdio: "ignore",
         env: process.env
@@ -4843,7 +4840,7 @@ function updateLocalGeminiCredentials(tokens) {
       child.unref();
       let started = false;
       for (let i = 0; i < 50; i++) {
-        if (await api.checkIfDaemonRunningAndCleanupStaleState()) {
+        if (await checkIfDaemonRunningAndCleanupStaleState()) {
           started = true;
           break;
         }
@@ -4857,16 +4854,16 @@ function updateLocalGeminiCredentials(tokens) {
       }
       process.exit(0);
     } else if (daemonSubcommand === "start-sync") {
-      await api.startDaemon();
+      await startDaemon();
       process.exit(0);
     } else if (daemonSubcommand === "stop") {
-      await api.stopDaemon();
+      await stopDaemon();
       process.exit(0);
     } else if (daemonSubcommand === "status") {
-      await api.runDoctorCommand("daemon");
+      await runDoctorCommand("daemon");
       process.exit(0);
     } else if (daemonSubcommand === "logs") {
-      const latest = await api.getLatestDaemonLog();
+      const latest = await getLatestDaemonLog();
       if (!latest) {
         console.log("No daemon logs found");
       } else {
@@ -4923,7 +4920,7 @@ ${chalk.bold("To clean up runaway processes:")} Use ${chalk.cyan("happy doctor c
         showVersion = true;
         unknownArgs.push(arg);
       } else if (arg === "--happy-starting-mode") {
-        options.startingMode = z.z.enum(["local", "remote"]).parse(args[++i]);
+        options.startingMode = z.enum(["local", "remote"]).parse(args[++i]);
       } else if (arg === "--yolo") {
         unknownArgs.push("--dangerously-skip-permissions");
       } else if (arg === "--started-by") {
@@ -4991,7 +4988,7 @@ ${chalk.gray("\u2500".repeat(60))}
 ${chalk.bold.cyan("Claude Code Options (from `claude --help`):")}
 `);
       try {
-        const claudeHelp = node_child_process.execFileSync(claudeCliPath, ["--help"], { encoding: "utf8" });
+        const claudeHelp = execFileSync(claudeCliPath, ["--help"], { encoding: "utf8" });
         console.log(claudeHelp);
       } catch (e) {
         console.log(chalk.yellow("Could not retrieve claude help. Make sure claude is installed."));
@@ -4999,15 +4996,15 @@ ${chalk.bold.cyan("Claude Code Options (from `claude --help`):")}
       process.exit(0);
     }
     if (showVersion) {
-      console.log(`happy version: ${api.packageJson.version}`);
+      console.log(`happy version: ${packageJson.version}`);
     }
     const {
       credentials
-    } = await api.authAndSetupMachineIfNeeded();
-    api.logger.debug("Ensuring Happy background service is running & matches our version...");
-    if (!await api.isDaemonRunningCurrentlyInstalledHappyVersion()) {
-      api.logger.debug("Starting Happy background service...");
-      const daemonProcess = api.spawnHappyCLI(["daemon", "start-sync"], {
+    } = await authAndSetupMachineIfNeeded();
+    logger.debug("Ensuring Happy background service is running & matches our version...");
+    if (!await isDaemonRunningCurrentlyInstalledHappyVersion()) {
+      logger.debug("Starting Happy background service...");
+      const daemonProcess = spawnHappyCLI(["daemon", "start-sync"], {
         detached: true,
         stdio: "ignore",
         env: process.env
@@ -5067,16 +5064,16 @@ ${chalk.bold("Examples:")}
     console.log(chalk.gray('Run "happy notify --help" for usage information.'));
     process.exit(1);
   }
-  let credentials = await api.readCredentials();
+  let credentials = await readCredentials();
   if (!credentials) {
     console.error(chalk.red('Error: Not authenticated. Please run "happy auth login" first.'));
     process.exit(1);
   }
   console.log(chalk.blue("\u{1F4F1} Sending push notification..."));
   try {
-    const api$1 = await api.ApiClient.create(credentials);
+    const api = await ApiClient.create(credentials);
     const notificationTitle = title || "Happy";
-    api$1.push().sendToAllDevices(
+    api.push().sendToAllDevices(
       notificationTitle,
       message,
       {
@@ -5095,5 +5092,4 @@ ${chalk.bold("Examples:")}
   }
 }
 
-exports.MessageBuffer = MessageBuffer;
-exports.trimIdent = trimIdent;
+export { MessageBuffer as M, trimIdent as t };

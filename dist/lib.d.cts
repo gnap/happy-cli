@@ -684,21 +684,6 @@ declare class ApiSessionClient extends EventEmitter {
      */
     sendUsageData(usage: Usage): void;
     /**
-     * Send cursor-agent usage data to the server.
-     * Accepts the normalized cursor usage format (camelCase fields)
-     * and converts to the usage-report shape the App expects.
-     */
-    sendCursorUsageData(fields: {
-        inputTokens?: number;
-        outputTokens?: number;
-        cacheReadInputTokens?: number;
-        cacheCreationInputTokens?: number;
-        totalTokens?: number;
-        contextSize?: number;
-        costUsd?: number;
-        durationMs?: number;
-    }): void;
-    /**
      * Update session metadata
      * @param handler - Handler function that returns the updated metadata
      */
@@ -712,29 +697,6 @@ declare class ApiSessionClient extends EventEmitter {
      * Wait for socket buffer to flush
      */
     flush(): Promise<void>;
-    /**
-     * Send a session protocol envelope to the server (cursor-agent support).
-     * Wraps the envelope in the format expected by the App and emits via WebSocket.
-     */
-    private _pendingOutbox;
-    private static MAX_BATCH_SIZE;
-    private _enqueue;
-    sendSessionProtocolMessage(envelope: {
-        id?: string;
-        role: string;
-        ev: Record<string, unknown>;
-        meta?: Record<string, unknown>;
-    }): void;
-    /**
-     * Send a turn-end / turn-start lifecycle envelope.
-     * Same shape as sendSessionProtocolMessage so the App's timer stops correctly.
-     */
-    sendSessionLifecycleEnvelope(envelope: {
-        id?: string;
-        role: string;
-        ev: Record<string, unknown>;
-        meta?: Record<string, unknown>;
-    }): void;
     close(): Promise<void>;
 }
 
@@ -1085,6 +1047,22 @@ declare class ApiClient {
      */
     getVendorToken(vendor: 'openai' | 'anthropic' | 'gemini'): Promise<any | null>;
 }
+
+/**
+ * Encode a Uint8Array to base64 string
+ * @param buffer - The buffer to encode
+ * @param variant - The encoding variant ('base64' or 'base64url')
+ */
+declare function encodeBase64(buffer: Uint8Array, variant?: 'base64' | 'base64url'): string;
+/**
+ * Decode a base64 string to a Uint8Array
+ * @param base64 - The base64 string to decode
+ * @param variant - The encoding variant ('base64' or 'base64url')
+ * @returns The decoded Uint8Array
+ */
+declare function decodeBase64(base64: string, variant?: 'base64' | 'base64url'): Uint8Array;
+declare function encrypt(key: Uint8Array, variant: 'legacy' | 'dataKey', data: any): Uint8Array;
+declare function decrypt(key: Uint8Array, variant: 'legacy' | 'dataKey', data: Uint8Array): any | null;
 
 /**
  * Design decisions:
@@ -1562,5 +1540,5 @@ interface SetupOfflineReconnectionResult {
  */
 declare function setupOfflineReconnection(opts: SetupOfflineReconnectionOptions): SetupOfflineReconnectionResult;
 
-export { ApiClient, ApiSessionClient, MessageQueue2, RawJSONLinesSchema, configuration, connectionState, createSessionMetadata, hashObject, initialMachineMetadata, logger, notifyDaemonSessionStarted, readCredentials, readSettings, registerKillSessionHandler, setupOfflineReconnection, startHappyServer, stopCaffeinate };
+export { ApiClient, ApiSessionClient, MessageQueue2, RawJSONLinesSchema, configuration, connectionState, createSessionMetadata, decodeBase64, decrypt, encodeBase64, encrypt, hashObject, initialMachineMetadata, logger, notifyDaemonSessionStarted, readCredentials, readSettings, registerKillSessionHandler, setupOfflineReconnection, startHappyServer, stopCaffeinate };
 export type { BackendFlavor, CreateSessionMetadataOptions, Credentials, PermissionMode, RawJSONLines, SessionMetadataResult, SetupOfflineReconnectionOptions, SetupOfflineReconnectionResult, UserMessage };
