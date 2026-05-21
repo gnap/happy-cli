@@ -1,6 +1,6 @@
 import os from 'node:os';
 import { resolve } from 'node:path';
-import { p as projectPath, f as configuration, o as packageJson, q as startOfflineReconnection } from './registerKillSessionHandler-CWDCUs8P.mjs';
+import { p as projectPath, c as configuration, g as packageJson, j as startOfflineReconnection } from './registerKillSessionHandler-FMsLKWD7.mjs';
 
 function createSessionMetadata(opts) {
   const state = {

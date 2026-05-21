@@ -2,7 +2,7 @@
 
 var os = require('node:os');
 var node_path = require('node:path');
-var api = require('./registerKillSessionHandler-CKvxqaHB.cjs');
+var api = require('./registerKillSessionHandler-DsrkV_ul.cjs');
 
 function createSessionMetadata(opts) {
   const state = {

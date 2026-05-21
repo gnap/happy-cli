@@ -1,7 +1,7 @@
 'use strict';
 
-var api = require('./registerKillSessionHandler-CKvxqaHB.cjs');
-var setupOfflineReconnection = require('./setupOfflineReconnection-DFyJaXRm.cjs');
+var api = require('./registerKillSessionHandler-DsrkV_ul.cjs');
+var setupOfflineReconnection = require('./setupOfflineReconnection-Cy8oBuwJ.cjs');
 require('zod');
 require('fs/promises');
 require('os');
@@ -43,10 +43,6 @@ exports.MessageQueue2 = api.MessageQueue2;
 exports.RawJSONLinesSchema = api.RawJSONLinesSchema;
 exports.configuration = api.configuration;
 exports.connectionState = api.connectionState;
-exports.decodeBase64 = api.decodeBase64;
-exports.decrypt = api.decrypt;
-exports.encodeBase64 = api.encodeBase64;
-exports.encrypt = api.encrypt;
 exports.hashObject = api.hashObject;
 exports.initialMachineMetadata = api.initialMachineMetadata;
 exports.logger = api.logger;

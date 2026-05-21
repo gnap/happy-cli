@@ -9,9 +9,6 @@
 export { ApiClient } from '@/api/api'
 export { ApiSessionClient } from '@/api/apiSession'
 
-// ── Crypto primitives (needed by sessionExt in alphahappy) ──
-export { encodeBase64, encrypt, decodeBase64, decrypt } from './api/encryption';
-
 export { logger } from '@/ui/logger'
 export { configuration } from '@/configuration'
 
