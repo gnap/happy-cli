@@ -1,6 +1,6 @@
 import 'chalk';
-import './index-DMoMAxe_.mjs';
-import './registerKillSessionHandler-DNXGRIAJ.mjs';
+import './index-CCEKMQBr.mjs';
+import './registerKillSessionHandler-Doe9-t5n.mjs';
 import 'zod';
 import 'node:child_process';
 import 'node:os';

@@ -1,6 +1,8 @@
-import os from 'node:os';
-import { resolve } from 'node:path';
-import { p as projectPath, c as configuration, k as packageJson, m as startOfflineReconnection } from './registerKillSessionHandler-DNXGRIAJ.mjs';
+'use strict';
+
+var os = require('node:os');
+var node_path = require('node:path');
+var api = require('./registerKillSessionHandler-CKvxqaHB.cjs');
 
 function createSessionMetadata(opts) {
   const state = {
@@ -9,13 +11,13 @@ function createSessionMetadata(opts) {
   const metadata = {
     path: process.cwd(),
     host: os.hostname(),
-    version: packageJson.version,
+    version: api.packageJson.version,
     os: os.platform(),
     machineId: opts.machineId,
     homeDir: os.homedir(),
-    happyHomeDir: configuration.happyHomeDir,
-    happyLibDir: projectPath(),
-    happyToolsDir: resolve(projectPath(), "tools", "unpacked"),
+    happyHomeDir: api.configuration.happyHomeDir,
+    happyLibDir: api.projectPath(),
+    happyToolsDir: node_path.resolve(api.projectPath(), "tools", "unpacked"),
     startedFromDaemon: opts.startedBy === "daemon",
     hostPid: process.pid,
     startedBy: opts.startedBy || "terminal",
@@ -63,17 +65,17 @@ function createOfflineSessionStub(sessionTag) {
 }
 
 function setupOfflineReconnection(opts) {
-  const { api, sessionTag, metadata, state, response, onSessionSwap } = opts;
+  const { api: api$1, sessionTag, metadata, state, response, onSessionSwap } = opts;
   let session;
   let reconnectionHandle = null;
   if (!response) {
     session = createOfflineSessionStub(sessionTag);
-    reconnectionHandle = startOfflineReconnection({
-      serverUrl: configuration.serverUrl,
+    reconnectionHandle = api.startOfflineReconnection({
+      serverUrl: api.configuration.serverUrl,
       onReconnected: async () => {
-        const resp = await api.getOrCreateSession({ tag: sessionTag, metadata, state });
+        const resp = await api$1.getOrCreateSession({ tag: sessionTag, metadata, state });
         if (!resp) throw new Error("Server unavailable");
-        const realSession = api.sessionSyncClient(resp);
+        const realSession = api$1.sessionSyncClient(resp);
         onSessionSwap(realSession);
         return realSession;
       },
@@ -83,9 +85,10 @@ function setupOfflineReconnection(opts) {
     });
     return { session, reconnectionHandle, isOffline: true };
   } else {
-    session = api.sessionSyncClient(response);
+    session = api$1.sessionSyncClient(response);
     return { session, reconnectionHandle: null, isOffline: false };
   }
 }
 
-export { createSessionMetadata as c, setupOfflineReconnection as s };
+exports.createSessionMetadata = createSessionMetadata;
+exports.setupOfflineReconnection = setupOfflineReconnection;

@@ -1054,7 +1054,18 @@ declare class ApiClient {
  * @param variant - The encoding variant ('base64' or 'base64url')
  */
 declare function encodeBase64(buffer: Uint8Array, variant?: 'base64' | 'base64url'): string;
+/**
+ * Decode a base64 string to a Uint8Array
+ * @param base64 - The base64 string to decode
+ * @param variant - The encoding variant ('base64' or 'base64url')
+ * @returns The decoded Uint8Array
+ */
+declare function decodeBase64(base64: string, variant?: 'base64' | 'base64url'): Uint8Array;
 declare function encrypt(key: Uint8Array, variant: 'legacy' | 'dataKey', data: any): Uint8Array;
+declare function decrypt(key: Uint8Array, variant: 'legacy' | 'dataKey', data: Uint8Array): any | null;
+
+type BackoffFunc = <T>(callback: () => Promise<T>) => Promise<T>;
+declare let backoff: BackoffFunc;
 
 /**
  * Design decisions:
@@ -1532,5 +1543,5 @@ interface SetupOfflineReconnectionResult {
  */
 declare function setupOfflineReconnection(opts: SetupOfflineReconnectionOptions): SetupOfflineReconnectionResult;
 
-export { ApiClient, ApiSessionClient, MessageQueue2, RawJSONLinesSchema, configuration, connectionState, createSessionMetadata, encodeBase64, encrypt, hashObject, initialMachineMetadata, logger, notifyDaemonSessionStarted, readCredentials, readSettings, registerKillSessionHandler, setupOfflineReconnection, startHappyServer, stopCaffeinate };
+export { ApiClient, ApiSessionClient, MessageQueue2, RawJSONLinesSchema, backoff, configuration, connectionState, createSessionMetadata, decodeBase64, decrypt, encodeBase64, encrypt, hashObject, initialMachineMetadata, logger, notifyDaemonSessionStarted, readCredentials, readSettings, registerKillSessionHandler, setupOfflineReconnection, startHappyServer, stopCaffeinate };
 export type { BackendFlavor, CreateSessionMetadataOptions, Credentials, PermissionMode, RawJSONLines, SessionMetadataResult, SetupOfflineReconnectionOptions, SetupOfflineReconnectionResult, UserMessage };
