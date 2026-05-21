@@ -9,6 +9,10 @@
 export { ApiClient } from '@/api/api'
 export { ApiSessionClient } from '@/api/apiSession'
 
+// ── Crypto primitives (used by alphahappy sessionExt) ──
+// These already exist in the fork's internals; exporting prevents duplication.
+export { encodeBase64, encrypt } from './api/encryption';
+
 export { logger } from '@/ui/logger'
 export { configuration } from '@/configuration'
 

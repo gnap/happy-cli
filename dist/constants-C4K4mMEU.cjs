@@ -1,6 +1,6 @@
 'use strict';
 
-var index = require('./index-CNNmnYNx.cjs');
+var index = require('./index-B4oUK6Ge.cjs');
 
 const GEMINI_API_KEY_ENV = "GEMINI_API_KEY";
 const GOOGLE_API_KEY_ENV = "GOOGLE_API_KEY";

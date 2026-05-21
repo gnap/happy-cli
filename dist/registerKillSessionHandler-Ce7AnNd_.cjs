@@ -863,7 +863,7 @@ class RpcHandlerManager {
   }
 }
 
-const __dirname$1 = path.dirname(url.fileURLToPath((typeof document === 'undefined' ? require('u' + 'rl').pathToFileURL(__filename).href : (_documentCurrentScript && _documentCurrentScript.tagName.toUpperCase() === 'SCRIPT' && _documentCurrentScript.src || new URL('registerKillSessionHandler-DsrkV_ul.cjs', document.baseURI).href))));
+const __dirname$1 = path.dirname(url.fileURLToPath((typeof document === 'undefined' ? require('u' + 'rl').pathToFileURL(__filename).href : (_documentCurrentScript && _documentCurrentScript.tagName.toUpperCase() === 'SCRIPT' && _documentCurrentScript.src || new URL('registerKillSessionHandler-Ce7AnNd_.cjs', document.baseURI).href))));
 function projectPath() {
   const path$1 = path.resolve(__dirname$1, "..");
   return path$1;
@@ -5434,6 +5434,8 @@ exports.clearMachineId = clearMachineId;
 exports.configuration = configuration;
 exports.connectionState = connectionState;
 exports.delay = delay;
+exports.encodeBase64 = encodeBase64;
+exports.encrypt = encrypt;
 exports.getEnvironmentInfo = getEnvironmentInfo;
 exports.getLatestDaemonLog = getLatestDaemonLog;
 exports.hashObject = hashObject;
