@@ -1061,6 +1061,11 @@ declare function encodeBase64(buffer: Uint8Array, variant?: 'base64' | 'base64ur
  * @returns The decoded Uint8Array
  */
 declare function decodeBase64(base64: string, variant?: 'base64' | 'base64url'): Uint8Array;
+/**
+ * Generate secure random bytes
+ */
+declare function getRandomBytes(size: number): Uint8Array;
+declare function libsodiumEncryptForPublicKey(data: Uint8Array, recipientPublicKey: Uint8Array): Uint8Array;
 declare function encrypt(key: Uint8Array, variant: 'legacy' | 'dataKey', data: any): Uint8Array;
 declare function decrypt(key: Uint8Array, variant: 'legacy' | 'dataKey', data: Uint8Array): any | null;
 
@@ -1543,5 +1548,5 @@ interface SetupOfflineReconnectionResult {
  */
 declare function setupOfflineReconnection(opts: SetupOfflineReconnectionOptions): SetupOfflineReconnectionResult;
 
-export { ApiClient, ApiSessionClient, MessageQueue2, RawJSONLinesSchema, backoff, configuration, connectionState, createSessionMetadata, decodeBase64, decrypt, encodeBase64, encrypt, hashObject, initialMachineMetadata, logger, notifyDaemonSessionStarted, readCredentials, readSettings, registerKillSessionHandler, setupOfflineReconnection, startHappyServer, stopCaffeinate };
+export { ApiClient, ApiSessionClient, MessageQueue2, RawJSONLinesSchema, backoff, configuration, connectionState, createSessionMetadata, decodeBase64, decrypt, encodeBase64, encrypt, getRandomBytes, hashObject, initialMachineMetadata, libsodiumEncryptForPublicKey, logger, notifyDaemonSessionStarted, readCredentials, readSettings, registerKillSessionHandler, setupOfflineReconnection, startHappyServer, stopCaffeinate };
 export type { BackendFlavor, CreateSessionMetadataOptions, Credentials, PermissionMode, RawJSONLines, SessionMetadataResult, SetupOfflineReconnectionOptions, SetupOfflineReconnectionResult, UserMessage };

@@ -1,7 +1,7 @@
 import{createRequire as _pkgrollCR}from"node:module";const require=_pkgrollCR(import.meta.url);import chalk from 'chalk';
 import os, { homedir } from 'node:os';
 import { randomUUID } from 'node:crypto';
-import { l as logger, p as projectPath, f as backoff, u as delay, R as RawJSONLinesSchema, v as isBun, w as AsyncLock, g as configuration, x as getEnvironmentInfo, o as connectionState, A as ApiClient, h as readSettings, i as initialMachineMetadata, q as packageJson, t as startOfflineReconnection, m as stopCaffeinate, n as notifyDaemonSessionStarted, s as startHappyServer, y as startCaffeinate, M as MessageQueue2, j as hashObject, k as registerKillSessionHandler, r as readCredentials, z as checkIfDaemonRunningAndCleanupStaleState, B as stopDaemon, C as clearCredentials, D as clearMachineId, E as authAndSetupMachineIfNeeded, F as openBrowser, G as killRunawayHappyProcesses, H as runDoctorCommand, I as isDaemonRunningCurrentlyInstalledHappyVersion, J as spawnHappyCLI, K as listDaemonSessions, L as stopDaemonSession, N as startDaemon, O as getLatestDaemonLog } from './registerKillSessionHandler-Doe9-t5n.mjs';
+import { h as logger, t as projectPath, f as backoff, w as delay, R as RawJSONLinesSchema, x as isBun, y as AsyncLock, i as configuration, z as getEnvironmentInfo, q as connectionState, A as ApiClient, j as readSettings, k as initialMachineMetadata, u as packageJson, v as startOfflineReconnection, p as stopCaffeinate, n as notifyDaemonSessionStarted, s as startHappyServer, B as startCaffeinate, M as MessageQueue2, m as hashObject, o as registerKillSessionHandler, r as readCredentials, C as checkIfDaemonRunningAndCleanupStaleState, D as stopDaemon, E as clearCredentials, F as clearMachineId, G as authAndSetupMachineIfNeeded, H as openBrowser, I as killRunawayHappyProcesses, J as runDoctorCommand, K as isDaemonRunningCurrentlyInstalledHappyVersion, L as spawnHappyCLI, N as listDaemonSessions, O as stopDaemonSession, P as startDaemon, Q as getLatestDaemonLog } from './registerKillSessionHandler-SomgBoYU.mjs';
 import { spawn, execSync, execFileSync } from 'node:child_process';
 import { resolve, join } from 'node:path';
 import { createInterface } from 'node:readline';
@@ -4584,7 +4584,7 @@ function updateLocalGeminiCredentials(tokens) {
     return;
   } else if (subcommand === "codex") {
     try {
-      const { runCodex } = await import('./runCodex-CZMT-VW5.mjs');
+      const { runCodex } = await import('./runCodex-BO9LaJP3.mjs');
       let startedBy = void 0;
       for (let i = 1; i < args.length; i++) {
         if (args[i] === "--started-by") {
@@ -4677,9 +4677,9 @@ function updateLocalGeminiCredentials(tokens) {
     if (geminiSubcommand === "project" && args[2] === "set" && args[3]) {
       const projectId = args[3];
       try {
-        const { saveGoogleCloudProjectToConfig } = await import('./config-BN2wqYFI.mjs');
-        const { readCredentials: readCredentials2 } = await import('./registerKillSessionHandler-Doe9-t5n.mjs').then(function (n) { return n.Q; });
-        const { ApiClient: ApiClient2 } = await import('./registerKillSessionHandler-Doe9-t5n.mjs').then(function (n) { return n.P; });
+        const { saveGoogleCloudProjectToConfig } = await import('./config-DmzX2fYD.mjs');
+        const { readCredentials: readCredentials2 } = await import('./registerKillSessionHandler-SomgBoYU.mjs').then(function (n) { return n.T; });
+        const { ApiClient: ApiClient2 } = await import('./registerKillSessionHandler-SomgBoYU.mjs').then(function (n) { return n.S; });
         let userEmail = void 0;
         try {
           const credentials = await readCredentials2();
@@ -4710,7 +4710,7 @@ function updateLocalGeminiCredentials(tokens) {
     }
     if (geminiSubcommand === "project" && args[2] === "get") {
       try {
-        const { readGeminiLocalConfig } = await import('./config-BN2wqYFI.mjs');
+        const { readGeminiLocalConfig } = await import('./config-DmzX2fYD.mjs');
         const config = readGeminiLocalConfig();
         if (config.googleCloudProject) {
           console.log(`Current Google Cloud Project: ${config.googleCloudProject}`);
@@ -4750,7 +4750,7 @@ function updateLocalGeminiCredentials(tokens) {
       process.exit(0);
     }
     try {
-      const { runGemini } = await import('./runGemini-C7ZsrhO0.mjs');
+      const { runGemini } = await import('./runGemini-kgvKUyI4.mjs');
       let startedBy = void 0;
       for (let i = 1; i < args.length; i++) {
         if (args[i] === "--started-by") {

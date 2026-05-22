@@ -1,5 +1,5 @@
-export { A as ApiClient, a as ApiSessionClient, M as MessageQueue2, R as RawJSONLinesSchema, f as backoff, g as configuration, o as connectionState, d as decodeBase64, c as decrypt, e as encodeBase64, b as encrypt, j as hashObject, i as initialMachineMetadata, l as logger, n as notifyDaemonSessionStarted, r as readCredentials, h as readSettings, k as registerKillSessionHandler, s as startHappyServer, m as stopCaffeinate } from './registerKillSessionHandler-Doe9-t5n.mjs';
-export { c as createSessionMetadata, s as setupOfflineReconnection } from './setupOfflineReconnection-PCAltIih.mjs';
+export { A as ApiClient, a as ApiSessionClient, M as MessageQueue2, R as RawJSONLinesSchema, f as backoff, i as configuration, q as connectionState, d as decodeBase64, c as decrypt, e as encodeBase64, b as encrypt, g as getRandomBytes, m as hashObject, k as initialMachineMetadata, l as libsodiumEncryptForPublicKey, h as logger, n as notifyDaemonSessionStarted, r as readCredentials, j as readSettings, o as registerKillSessionHandler, s as startHappyServer, p as stopCaffeinate } from './registerKillSessionHandler-SomgBoYU.mjs';
+export { c as createSessionMetadata, s as setupOfflineReconnection } from './setupOfflineReconnection-rRK6MVtK.mjs';
 import 'zod';
 import 'fs/promises';
 import 'os';

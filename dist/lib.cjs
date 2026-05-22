@@ -1,7 +1,7 @@
 'use strict';
 
-var api = require('./registerKillSessionHandler-CKvxqaHB.cjs');
-var setupOfflineReconnection = require('./setupOfflineReconnection-DFyJaXRm.cjs');
+var api = require('./registerKillSessionHandler-DwuI1daz.cjs');
+var setupOfflineReconnection = require('./setupOfflineReconnection-CVK9bI9M.cjs');
 require('zod');
 require('fs/promises');
 require('os');
@@ -48,8 +48,10 @@ exports.decodeBase64 = api.decodeBase64;
 exports.decrypt = api.decrypt;
 exports.encodeBase64 = api.encodeBase64;
 exports.encrypt = api.encrypt;
+exports.getRandomBytes = api.getRandomBytes;
 exports.hashObject = api.hashObject;
 exports.initialMachineMetadata = api.initialMachineMetadata;
+exports.libsodiumEncryptForPublicKey = api.libsodiumEncryptForPublicKey;
 exports.logger = api.logger;
 exports.notifyDaemonSessionStarted = api.notifyDaemonSessionStarted;
 exports.readCredentials = api.readCredentials;

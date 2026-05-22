@@ -1,58 +1,56 @@
-'use strict';
-
-var ink = require('ink');
-var React = require('react');
-var api = require('./registerKillSessionHandler-CKvxqaHB.cjs');
-var index_js = require('@modelcontextprotocol/sdk/client/index.js');
-var stdio_js = require('@modelcontextprotocol/sdk/client/stdio.js');
-var z = require('zod');
-var types_js = require('@modelcontextprotocol/sdk/types.js');
-var child_process = require('child_process');
-var BaseReasoningProcessor = require('./BaseReasoningProcessor-CEED0g2r.cjs');
-var node_crypto = require('node:crypto');
-var os = require('node:os');
-var node_path = require('node:path');
-var setupOfflineReconnection = require('./setupOfflineReconnection-DFyJaXRm.cjs');
-var fs = require('node:fs');
-var index = require('./index-BuNg0tTD.cjs');
-var constants = require('./constants-BF27CngA.cjs');
-require('fs/promises');
-require('os');
-require('tmp');
-require('axios');
-require('node:events');
-require('socket.io-client');
-require('tweetnacl');
-require('util');
-require('crypto');
-require('path');
-require('url');
-require('expo-server-sdk');
-require('chalk');
-require('qrcode-terminal');
-require('node:fs/promises');
-require('open');
-require('fs');
-require('ps-list');
-require('cross-spawn');
-require('fastify');
-require('fastify-type-provider-zod');
-require('@modelcontextprotocol/sdk/server/mcp.js');
-require('node:http');
-require('@modelcontextprotocol/sdk/server/streamableHttp.js');
-require('node:child_process');
-require('node:readline');
-require('node:url');
-require('node:util');
-require('http');
+import { useStdout, useInput, Box, Text, render } from 'ink';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { h as logger, q as connectionState, A as ApiClient, j as readSettings, k as initialMachineMetadata, n as notifyDaemonSessionStarted, M as MessageQueue2, m as hashObject, o as registerKillSessionHandler, s as startHappyServer, t as projectPath, p as stopCaffeinate } from './registerKillSessionHandler-SomgBoYU.mjs';
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { z } from 'zod';
+import { ElicitRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import { execSync } from 'child_process';
+import { B as BasePermissionHandler, a as BaseReasoningProcessor } from './BaseReasoningProcessor-DVah3_xa.mjs';
+import { randomUUID } from 'node:crypto';
+import os from 'node:os';
+import { join } from 'node:path';
+import { c as createSessionMetadata, s as setupOfflineReconnection } from './setupOfflineReconnection-rRK6MVtK.mjs';
+import fs from 'node:fs';
+import { M as MessageBuffer } from './index-STNIkr09.mjs';
+import { C as CHANGE_TITLE_INSTRUCTION } from './constants-BMoh9pek.mjs';
+import 'fs/promises';
+import 'os';
+import 'tmp';
+import 'axios';
+import 'node:events';
+import 'socket.io-client';
+import 'tweetnacl';
+import 'util';
+import 'crypto';
+import 'path';
+import 'url';
+import 'expo-server-sdk';
+import 'chalk';
+import 'qrcode-terminal';
+import 'node:fs/promises';
+import 'open';
+import 'fs';
+import 'ps-list';
+import 'cross-spawn';
+import 'fastify';
+import 'fastify-type-provider-zod';
+import '@modelcontextprotocol/sdk/server/mcp.js';
+import 'node:http';
+import '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import 'node:child_process';
+import 'node:readline';
+import 'node:url';
+import 'node:util';
+import 'http';
 
 const DEFAULT_TIMEOUT = 14 * 24 * 60 * 60 * 1e3;
 function getCodexMcpCommand() {
   try {
-    const version = child_process.execSync("codex --version", { encoding: "utf8" }).trim();
+    const version = execSync("codex --version", { encoding: "utf8" }).trim();
     const match = version.match(/codex-cli\s+(\d+\.\d+\.\d+(?:-alpha\.\d+)?)/);
     if (!match) {
-      api.logger.debug("[CodexMCP] Could not parse codex version:", version);
+      logger.debug("[CodexMCP] Could not parse codex version:", version);
       return null;
     }
     const versionStr = match[1];
@@ -67,7 +65,7 @@ function getCodexMcpCommand() {
     }
     return "mcp";
   } catch (error) {
-    api.logger.debug("[CodexMCP] Codex CLI not found or not executable:", error);
+    logger.debug("[CodexMCP] Codex CLI not found or not executable:", error);
     return null;
   }
 }
@@ -80,14 +78,14 @@ class CodexMcpClient {
   handler = null;
   permissionHandler = null;
   constructor() {
-    this.client = new index_js.Client(
+    this.client = new Client(
       { name: "happy-codex-client", version: "1.0.0" },
       { capabilities: { elicitation: {} } }
     );
-    this.client.setNotificationHandler(z.z.object({
-      method: z.z.literal("codex/event"),
-      params: z.z.object({
-        msg: z.z.any()
+    this.client.setNotificationHandler(z.object({
+      method: z.literal("codex/event"),
+      params: z.object({
+        msg: z.any()
       })
     }).passthrough(), (data) => {
       const msg = data.params.msg;
@@ -112,8 +110,8 @@ class CodexMcpClient {
         "Codex CLI not found or not executable.\n\nTo install codex:\n  npm install -g @openai/codex\n\nAlternatively, use Claude:\n  happy claude"
       );
     }
-    api.logger.debug(`[CodexMCP] Connecting to Codex MCP server using command: codex ${mcpCommand}`);
-    this.transport = new stdio_js.StdioClientTransport({
+    logger.debug(`[CodexMCP] Connecting to Codex MCP server using command: codex ${mcpCommand}`);
+    this.transport = new StdioClientTransport({
       command: "codex",
       args: [mcpCommand],
       env: Object.keys(process.env).reduce((acc, key) => {
@@ -125,17 +123,17 @@ class CodexMcpClient {
     this.registerPermissionHandlers();
     await this.client.connect(this.transport);
     this.connected = true;
-    api.logger.debug("[CodexMCP] Connected to Codex");
+    logger.debug("[CodexMCP] Connected to Codex");
   }
   registerPermissionHandlers() {
     this.client.setRequestHandler(
-      types_js.ElicitRequestSchema,
+      ElicitRequestSchema,
       async (request) => {
         console.log("[CodexMCP] Received elicitation request:", request.params);
         const params = request.params;
         const toolName = "CodexBash";
         if (!this.permissionHandler) {
-          api.logger.debug("[CodexMCP] No permission handler set, denying by default");
+          logger.debug("[CodexMCP] No permission handler set, denying by default");
           return {
             decision: "denied"
           };
@@ -149,12 +147,12 @@ class CodexMcpClient {
               cwd: params.codex_cwd
             }
           );
-          api.logger.debug("[CodexMCP] Permission result:", result);
+          logger.debug("[CodexMCP] Permission result:", result);
           return {
             decision: result.decision
           };
         } catch (error) {
-          api.logger.debug("[CodexMCP] Error handling permission request:", error);
+          logger.debug("[CodexMCP] Error handling permission request:", error);
           return {
             decision: "denied",
             reason: error instanceof Error ? error.message : "Permission request failed"
@@ -162,11 +160,11 @@ class CodexMcpClient {
         }
       }
     );
-    api.logger.debug("[CodexMCP] Permission handlers registered");
+    logger.debug("[CodexMCP] Permission handlers registered");
   }
   async startSession(config, options) {
     if (!this.connected) await this.connect();
-    api.logger.debug("[CodexMCP] Starting Codex session:", config);
+    logger.debug("[CodexMCP] Starting Codex session:", config);
     const response = await this.client.callTool({
       name: "codex",
       arguments: config
@@ -175,7 +173,7 @@ class CodexMcpClient {
       timeout: DEFAULT_TIMEOUT
       // maxTotalTimeout: 10000000000 
     });
-    api.logger.debug("[CodexMCP] startSession response:", response);
+    logger.debug("[CodexMCP] startSession response:", response);
     this.extractIdentifiers(response);
     return response;
   }
@@ -186,10 +184,10 @@ class CodexMcpClient {
     }
     if (!this.conversationId) {
       this.conversationId = this.sessionId;
-      api.logger.debug("[CodexMCP] conversationId missing, defaulting to sessionId:", this.conversationId);
+      logger.debug("[CodexMCP] conversationId missing, defaulting to sessionId:", this.conversationId);
     }
     const args = { sessionId: this.sessionId, conversationId: this.conversationId, prompt };
-    api.logger.debug("[CodexMCP] Continuing Codex session:", args);
+    logger.debug("[CodexMCP] Continuing Codex session:", args);
     const response = await this.client.callTool({
       name: "codex-reply",
       arguments: args
@@ -197,7 +195,7 @@ class CodexMcpClient {
       signal: options?.signal,
       timeout: DEFAULT_TIMEOUT
     });
-    api.logger.debug("[CodexMCP] continueSession response:", response);
+    logger.debug("[CodexMCP] continueSession response:", response);
     this.extractIdentifiers(response);
     return response;
   }
@@ -213,12 +211,12 @@ class CodexMcpClient {
       const sessionId = candidate.session_id ?? candidate.sessionId;
       if (sessionId) {
         this.sessionId = sessionId;
-        api.logger.debug("[CodexMCP] Session ID extracted from event:", this.sessionId);
+        logger.debug("[CodexMCP] Session ID extracted from event:", this.sessionId);
       }
       const conversationId = candidate.conversation_id ?? candidate.conversationId;
       if (conversationId) {
         this.conversationId = conversationId;
-        api.logger.debug("[CodexMCP] Conversation ID extracted from event:", this.conversationId);
+        logger.debug("[CodexMCP] Conversation ID extracted from event:", this.conversationId);
       }
     }
   }
@@ -226,28 +224,28 @@ class CodexMcpClient {
     const meta = response?.meta || {};
     if (meta.sessionId) {
       this.sessionId = meta.sessionId;
-      api.logger.debug("[CodexMCP] Session ID extracted:", this.sessionId);
+      logger.debug("[CodexMCP] Session ID extracted:", this.sessionId);
     } else if (response?.sessionId) {
       this.sessionId = response.sessionId;
-      api.logger.debug("[CodexMCP] Session ID extracted:", this.sessionId);
+      logger.debug("[CodexMCP] Session ID extracted:", this.sessionId);
     }
     if (meta.conversationId) {
       this.conversationId = meta.conversationId;
-      api.logger.debug("[CodexMCP] Conversation ID extracted:", this.conversationId);
+      logger.debug("[CodexMCP] Conversation ID extracted:", this.conversationId);
     } else if (response?.conversationId) {
       this.conversationId = response.conversationId;
-      api.logger.debug("[CodexMCP] Conversation ID extracted:", this.conversationId);
+      logger.debug("[CodexMCP] Conversation ID extracted:", this.conversationId);
     }
     const content = response?.content;
     if (Array.isArray(content)) {
       for (const item of content) {
         if (!this.sessionId && item?.sessionId) {
           this.sessionId = item.sessionId;
-          api.logger.debug("[CodexMCP] Session ID extracted from content:", this.sessionId);
+          logger.debug("[CodexMCP] Session ID extracted from content:", this.sessionId);
         }
         if (!this.conversationId && item && typeof item === "object" && "conversationId" in item && item.conversationId) {
           this.conversationId = item.conversationId;
-          api.logger.debug("[CodexMCP] Conversation ID extracted from content:", this.conversationId);
+          logger.debug("[CodexMCP] Conversation ID extracted from content:", this.conversationId);
         }
       }
     }
@@ -262,13 +260,13 @@ class CodexMcpClient {
     const previousSessionId = this.sessionId;
     this.sessionId = null;
     this.conversationId = null;
-    api.logger.debug("[CodexMCP] Session cleared, previous sessionId:", previousSessionId);
+    logger.debug("[CodexMCP] Session cleared, previous sessionId:", previousSessionId);
   }
   /**
    * Store the current session ID without clearing it, useful for abort handling
    */
   storeSessionForResume() {
-    api.logger.debug("[CodexMCP] Storing session for potential resume:", this.sessionId);
+    logger.debug("[CodexMCP] Storing session for potential resume:", this.sessionId);
     return this.sessionId;
   }
   /**
@@ -277,35 +275,35 @@ class CodexMcpClient {
    * transient connection resets where you may want to keep the session id.
    */
   async forceCloseSession() {
-    api.logger.debug("[CodexMCP] Force closing session");
+    logger.debug("[CodexMCP] Force closing session");
     try {
       await this.disconnect();
     } finally {
       this.clearSession();
     }
-    api.logger.debug("[CodexMCP] Session force-closed");
+    logger.debug("[CodexMCP] Session force-closed");
   }
   async disconnect() {
     if (!this.connected) return;
     const pid = this.transport?.pid ?? null;
-    api.logger.debug(`[CodexMCP] Disconnecting; child pid=${pid ?? "none"}`);
+    logger.debug(`[CodexMCP] Disconnecting; child pid=${pid ?? "none"}`);
     try {
-      api.logger.debug("[CodexMCP] client.close begin");
+      logger.debug("[CodexMCP] client.close begin");
       await this.client.close();
-      api.logger.debug("[CodexMCP] client.close done");
+      logger.debug("[CodexMCP] client.close done");
     } catch (e) {
-      api.logger.debug("[CodexMCP] Error closing client, attempting transport close directly", e);
+      logger.debug("[CodexMCP] Error closing client, attempting transport close directly", e);
       try {
-        api.logger.debug("[CodexMCP] transport.close begin");
+        logger.debug("[CodexMCP] transport.close begin");
         await this.transport?.close?.();
-        api.logger.debug("[CodexMCP] transport.close done");
+        logger.debug("[CodexMCP] transport.close done");
       } catch {
       }
     }
     if (pid) {
       try {
         process.kill(pid, 0);
-        api.logger.debug("[CodexMCP] Child still alive, sending SIGKILL");
+        logger.debug("[CodexMCP] Child still alive, sending SIGKILL");
         try {
           process.kill(pid, "SIGKILL");
         } catch {
@@ -315,11 +313,11 @@ class CodexMcpClient {
     }
     this.transport = null;
     this.connected = false;
-    api.logger.debug(`[CodexMCP] Disconnected; session ${this.sessionId ?? "none"} preserved`);
+    logger.debug(`[CodexMCP] Disconnected; session ${this.sessionId ?? "none"} preserved`);
   }
 }
 
-class CodexPermissionHandler extends BaseReasoningProcessor.BasePermissionHandler {
+class CodexPermissionHandler extends BasePermissionHandler {
   constructor(session) {
     super(session);
   }
@@ -342,12 +340,12 @@ class CodexPermissionHandler extends BaseReasoningProcessor.BasePermissionHandle
         input
       });
       this.addPendingRequestToState(toolCallId, toolName, input);
-      api.logger.debug(`${this.getLogPrefix()} Permission request sent for tool: ${toolName} (${toolCallId})`);
+      logger.debug(`${this.getLogPrefix()} Permission request sent for tool: ${toolName} (${toolCallId})`);
     });
   }
 }
 
-class ReasoningProcessor extends BaseReasoningProcessor.BaseReasoningProcessor {
+class ReasoningProcessor extends BaseReasoningProcessor {
   getToolName() {
     return "CodexReasoning";
   }
@@ -379,8 +377,8 @@ class DiffProcessor {
    */
   processDiff(unifiedDiff) {
     if (this.previousDiff !== unifiedDiff) {
-      api.logger.debug("[DiffProcessor] Unified diff changed, sending CodexDiff tool call");
-      const callId = node_crypto.randomUUID();
+      logger.debug("[DiffProcessor] Unified diff changed, sending CodexDiff tool call");
+      const callId = randomUUID();
       const toolCall = {
         type: "tool-call",
         name: "CodexDiff",
@@ -388,7 +386,7 @@ class DiffProcessor {
         input: {
           unified_diff: unifiedDiff
         },
-        id: node_crypto.randomUUID()
+        id: randomUUID()
       };
       this.onMessage?.(toolCall);
       const toolResult = {
@@ -397,18 +395,18 @@ class DiffProcessor {
         output: {
           status: "completed"
         },
-        id: node_crypto.randomUUID()
+        id: randomUUID()
       };
       this.onMessage?.(toolResult);
     }
     this.previousDiff = unifiedDiff;
-    api.logger.debug("[DiffProcessor] Updated stored diff");
+    logger.debug("[DiffProcessor] Updated stored diff");
   }
   /**
    * Reset the processor state (called on task_complete or turn_aborted)
    */
   reset() {
-    api.logger.debug("[DiffProcessor] Resetting diff state");
+    logger.debug("[DiffProcessor] Resetting diff state");
     this.previousDiff = null;
   }
   /**
@@ -426,14 +424,14 @@ class DiffProcessor {
 }
 
 const CodexDisplay = ({ messageBuffer, logPath, onExit }) => {
-  const [messages, setMessages] = React.useState([]);
-  const [confirmationMode, setConfirmationMode] = React.useState(false);
-  const [actionInProgress, setActionInProgress] = React.useState(false);
-  const confirmationTimeoutRef = React.useRef(null);
-  const { stdout } = ink.useStdout();
+  const [messages, setMessages] = useState([]);
+  const [confirmationMode, setConfirmationMode] = useState(false);
+  const [actionInProgress, setActionInProgress] = useState(false);
+  const confirmationTimeoutRef = useRef(null);
+  const { stdout } = useStdout();
   const terminalWidth = stdout.columns || 80;
   const terminalHeight = stdout.rows || 24;
-  React.useEffect(() => {
+  useEffect(() => {
     setMessages(messageBuffer.getMessages());
     const unsubscribe = messageBuffer.onUpdate((newMessages) => {
       setMessages(newMessages);
@@ -445,14 +443,14 @@ const CodexDisplay = ({ messageBuffer, logPath, onExit }) => {
       }
     };
   }, [messageBuffer]);
-  const resetConfirmation = React.useCallback(() => {
+  const resetConfirmation = useCallback(() => {
     setConfirmationMode(false);
     if (confirmationTimeoutRef.current) {
       clearTimeout(confirmationTimeoutRef.current);
       confirmationTimeoutRef.current = null;
     }
   }, []);
-  const setConfirmationWithTimeout = React.useCallback(() => {
+  const setConfirmationWithTimeout = useCallback(() => {
     setConfirmationMode(true);
     if (confirmationTimeoutRef.current) {
       clearTimeout(confirmationTimeoutRef.current);
@@ -461,7 +459,7 @@ const CodexDisplay = ({ messageBuffer, logPath, onExit }) => {
       resetConfirmation();
     }, 15e3);
   }, [resetConfirmation]);
-  ink.useInput(React.useCallback(async (input, key) => {
+  useInput(useCallback(async (input, key) => {
     if (actionInProgress) return;
     if (key.ctrl && input === "c") {
       if (confirmationMode) {
@@ -508,8 +506,8 @@ const CodexDisplay = ({ messageBuffer, logPath, onExit }) => {
       return chunks.join("\n");
     }).join("\n");
   };
-  return /* @__PURE__ */ React.createElement(ink.Box, { flexDirection: "column", width: terminalWidth, height: terminalHeight }, /* @__PURE__ */ React.createElement(
-    ink.Box,
+  return /* @__PURE__ */ React.createElement(Box, { flexDirection: "column", width: terminalWidth, height: terminalHeight }, /* @__PURE__ */ React.createElement(
+    Box,
     {
       flexDirection: "column",
       width: terminalWidth,
@@ -519,13 +517,13 @@ const CodexDisplay = ({ messageBuffer, logPath, onExit }) => {
       paddingX: 1,
       overflow: "hidden"
     },
-    /* @__PURE__ */ React.createElement(ink.Box, { flexDirection: "column", marginBottom: 1 }, /* @__PURE__ */ React.createElement(ink.Text, { color: "gray", bold: true }, "\u{1F916} Codex Agent Messages"), /* @__PURE__ */ React.createElement(ink.Text, { color: "gray", dimColor: true }, "\u2500".repeat(Math.min(terminalWidth - 4, 60)))),
-    /* @__PURE__ */ React.createElement(ink.Box, { flexDirection: "column", height: terminalHeight - 10, overflow: "hidden" }, messages.length === 0 ? /* @__PURE__ */ React.createElement(ink.Text, { color: "gray", dimColor: true }, "Waiting for messages...") : (
+    /* @__PURE__ */ React.createElement(Box, { flexDirection: "column", marginBottom: 1 }, /* @__PURE__ */ React.createElement(Text, { color: "gray", bold: true }, "\u{1F916} Codex Agent Messages"), /* @__PURE__ */ React.createElement(Text, { color: "gray", dimColor: true }, "\u2500".repeat(Math.min(terminalWidth - 4, 60)))),
+    /* @__PURE__ */ React.createElement(Box, { flexDirection: "column", height: terminalHeight - 10, overflow: "hidden" }, messages.length === 0 ? /* @__PURE__ */ React.createElement(Text, { color: "gray", dimColor: true }, "Waiting for messages...") : (
       // Show only the last messages that fit in the available space
-      messages.slice(-Math.max(1, terminalHeight - 10)).map((msg) => /* @__PURE__ */ React.createElement(ink.Box, { key: msg.id, flexDirection: "column", marginBottom: 1 }, /* @__PURE__ */ React.createElement(ink.Text, { color: getMessageColor(msg.type), dimColor: true }, formatMessage(msg))))
+      messages.slice(-Math.max(1, terminalHeight - 10)).map((msg) => /* @__PURE__ */ React.createElement(Box, { key: msg.id, flexDirection: "column", marginBottom: 1 }, /* @__PURE__ */ React.createElement(Text, { color: getMessageColor(msg.type), dimColor: true }, formatMessage(msg))))
     ))
   ), /* @__PURE__ */ React.createElement(
-    ink.Box,
+    Box,
     {
       width: terminalWidth,
       borderStyle: "round",
@@ -535,7 +533,7 @@ const CodexDisplay = ({ messageBuffer, logPath, onExit }) => {
       alignItems: "center",
       flexDirection: "column"
     },
-    /* @__PURE__ */ React.createElement(ink.Box, { flexDirection: "column", alignItems: "center" }, actionInProgress ? /* @__PURE__ */ React.createElement(ink.Text, { color: "gray", bold: true }, "Exiting agent...") : confirmationMode ? /* @__PURE__ */ React.createElement(ink.Text, { color: "red", bold: true }, "\u26A0\uFE0F  Press Ctrl-C again to exit the agent") : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(ink.Text, { color: "green", bold: true }, "\u{1F916} Codex Agent Running \u2022 Ctrl-C to exit")), process.env.DEBUG && logPath && /* @__PURE__ */ React.createElement(ink.Text, { color: "gray", dimColor: true }, "Debug logs: ", logPath))
+    /* @__PURE__ */ React.createElement(Box, { flexDirection: "column", alignItems: "center" }, actionInProgress ? /* @__PURE__ */ React.createElement(Text, { color: "gray", bold: true }, "Exiting agent...") : confirmationMode ? /* @__PURE__ */ React.createElement(Text, { color: "red", bold: true }, "\u26A0\uFE0F  Press Ctrl-C again to exit the agent") : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(Text, { color: "green", bold: true }, "\u{1F916} Codex Agent Running \u2022 Ctrl-C to exit")), process.env.DEBUG && logPath && /* @__PURE__ */ React.createElement(Text, { color: "gray", dimColor: true }, "Debug logs: ", logPath))
   ));
 };
 
@@ -554,31 +552,31 @@ function emitReadyIfIdle({ pending, queueSize, shouldExit, sendReady, notify }) 
   return true;
 }
 async function runCodex(opts) {
-  const sessionTag = node_crypto.randomUUID();
-  api.connectionState.setBackend("Codex");
-  const api$1 = await api.ApiClient.create(opts.credentials);
-  api.logger.debug(`[codex] Starting with options: startedBy=${opts.startedBy || "terminal"}`);
-  const settings = await api.readSettings();
+  const sessionTag = randomUUID();
+  connectionState.setBackend("Codex");
+  const api = await ApiClient.create(opts.credentials);
+  logger.debug(`[codex] Starting with options: startedBy=${opts.startedBy || "terminal"}`);
+  const settings = await readSettings();
   let machineId = settings?.machineId;
   if (!machineId) {
     console.error(`[START] No machine ID found in settings, which is unexpected since authAndSetupMachineIfNeeded should have created it. Please report this issue on https://github.com/slopus/happy-cli/issues`);
     process.exit(1);
   }
-  api.logger.debug(`Using machineId: ${machineId}`);
-  await api$1.getOrCreateMachine({
+  logger.debug(`Using machineId: ${machineId}`);
+  await api.getOrCreateMachine({
     machineId,
-    metadata: api.initialMachineMetadata
+    metadata: initialMachineMetadata
   });
-  const { state, metadata } = setupOfflineReconnection.createSessionMetadata({
+  const { state, metadata } = createSessionMetadata({
     flavor: "codex",
     machineId,
     startedBy: opts.startedBy
   });
-  const response = await api$1.getOrCreateSession({ tag: sessionTag, metadata, state });
+  const response = await api.getOrCreateSession({ tag: sessionTag, metadata, state });
   let session;
   let permissionHandler;
-  const { session: initialSession, reconnectionHandle } = setupOfflineReconnection.setupOfflineReconnection({
-    api: api$1,
+  const { session: initialSession, reconnectionHandle } = setupOfflineReconnection({
+    api,
     sessionTag,
     metadata,
     state,
@@ -593,18 +591,18 @@ async function runCodex(opts) {
   session = initialSession;
   if (response) {
     try {
-      api.logger.debug(`[START] Reporting session ${response.id} to daemon`);
-      const result = await api.notifyDaemonSessionStarted(response.id, metadata);
+      logger.debug(`[START] Reporting session ${response.id} to daemon`);
+      const result = await notifyDaemonSessionStarted(response.id, metadata);
       if (result.error) {
-        api.logger.debug(`[START] Failed to report to daemon (may not be running):`, result.error);
+        logger.debug(`[START] Failed to report to daemon (may not be running):`, result.error);
       } else {
-        api.logger.debug(`[START] Reported session ${response.id} to daemon`);
+        logger.debug(`[START] Reported session ${response.id} to daemon`);
       }
     } catch (error) {
-      api.logger.debug("[START] Failed to report to daemon (may not be running):", error);
+      logger.debug("[START] Failed to report to daemon (may not be running):", error);
     }
   }
-  const messageQueue = new api.MessageQueue2((mode) => api.hashObject({
+  const messageQueue = new MessageQueue2((mode) => hashObject({
     permissionMode: mode.permissionMode,
     model: mode.model
   }));
@@ -615,17 +613,17 @@ async function runCodex(opts) {
     if (message.meta?.permissionMode) {
       messagePermissionMode = message.meta.permissionMode;
       currentPermissionMode = messagePermissionMode;
-      api.logger.debug(`[Codex] Permission mode updated from user message to: ${currentPermissionMode}`);
+      logger.debug(`[Codex] Permission mode updated from user message to: ${currentPermissionMode}`);
     } else {
-      api.logger.debug(`[Codex] User message received with no permission mode override, using current: ${currentPermissionMode ?? "default (effective)"}`);
+      logger.debug(`[Codex] User message received with no permission mode override, using current: ${currentPermissionMode ?? "default (effective)"}`);
     }
     let messageModel = currentModel;
     if (message.meta?.hasOwnProperty("model")) {
       messageModel = message.meta.model || void 0;
       currentModel = messageModel;
-      api.logger.debug(`[Codex] Model updated from user message: ${messageModel || "reset to default"}`);
+      logger.debug(`[Codex] Model updated from user message: ${messageModel || "reset to default"}`);
     } else {
-      api.logger.debug(`[Codex] User message received with no model override, using current: ${currentModel || "default"}`);
+      logger.debug(`[Codex] User message received with no model override, using current: ${currentModel || "default"}`);
     }
     const enhancedMode = {
       permissionMode: messagePermissionMode || "default",
@@ -641,13 +639,13 @@ async function runCodex(opts) {
   const sendReady = () => {
     session.sendSessionEvent({ type: "ready" });
     try {
-      api$1.push().sendToAllDevices(
+      api.push().sendToAllDevices(
         "It's ready!",
         "Codex is waiting for your command",
         { sessionId: session.sessionId }
       );
     } catch (pushError) {
-      api.logger.debug("[Codex] Failed to send ready push", pushError);
+      logger.debug("[Codex] Failed to send ready push", pushError);
     }
   };
   function logActiveHandles(tag) {
@@ -655,10 +653,10 @@ async function runCodex(opts) {
     const anyProc = process;
     const handles = typeof anyProc._getActiveHandles === "function" ? anyProc._getActiveHandles() : [];
     const requests = typeof anyProc._getActiveRequests === "function" ? anyProc._getActiveRequests() : [];
-    api.logger.debug(`[codex][handles] ${tag}: handles=${handles.length} requests=${requests.length}`);
+    logger.debug(`[codex][handles] ${tag}: handles=${handles.length} requests=${requests.length}`);
     try {
       const kinds = handles.map((h) => h && h.constructor ? h.constructor.name : typeof h);
-      api.logger.debug(`[codex][handles] kinds=${JSON.stringify(kinds)}`);
+      logger.debug(`[codex][handles] kinds=${JSON.stringify(kinds)}`);
     } catch {
     }
   }
@@ -666,25 +664,25 @@ async function runCodex(opts) {
   let shouldExit = false;
   let storedSessionIdForResume = null;
   async function handleAbort() {
-    api.logger.debug("[Codex] Abort requested - stopping current task");
+    logger.debug("[Codex] Abort requested - stopping current task");
     try {
       if (client.hasActiveSession()) {
         storedSessionIdForResume = client.storeSessionForResume();
-        api.logger.debug("[Codex] Stored session for resume:", storedSessionIdForResume);
+        logger.debug("[Codex] Stored session for resume:", storedSessionIdForResume);
       }
       abortController.abort();
       reasoningProcessor.abort();
-      api.logger.debug("[Codex] Abort completed - session remains active");
+      logger.debug("[Codex] Abort completed - session remains active");
     } catch (error) {
-      api.logger.debug("[Codex] Error during abort:", error);
+      logger.debug("[Codex] Error during abort:", error);
     } finally {
       abortController = new AbortController();
     }
   }
   const handleKillSession = async () => {
-    api.logger.debug("[Codex] Kill session requested - terminating process");
+    logger.debug("[Codex] Kill session requested - terminating process");
     await handleAbort();
-    api.logger.debug("[Codex] Abort completed, proceeding with termination");
+    logger.debug("[Codex] Abort completed, proceeding with termination");
     try {
       if (session) {
         session.updateMetadata((currentMetadata) => ({
@@ -701,29 +699,29 @@ async function runCodex(opts) {
       try {
         await client.forceCloseSession();
       } catch (e) {
-        api.logger.debug("[Codex] Error while force closing Codex session during termination", e);
+        logger.debug("[Codex] Error while force closing Codex session during termination", e);
       }
-      api.stopCaffeinate();
+      stopCaffeinate();
       happyServer.stop();
-      api.logger.debug("[Codex] Session termination complete, exiting");
+      logger.debug("[Codex] Session termination complete, exiting");
       process.exit(0);
     } catch (error) {
-      api.logger.debug("[Codex] Error during session termination:", error);
+      logger.debug("[Codex] Error during session termination:", error);
       process.exit(1);
     }
   };
   session.rpcHandlerManager.registerHandler("abort", handleAbort);
-  api.registerKillSessionHandler(session.rpcHandlerManager, handleKillSession);
-  const messageBuffer = new index.MessageBuffer();
+  registerKillSessionHandler(session.rpcHandlerManager, handleKillSession);
+  const messageBuffer = new MessageBuffer();
   const hasTTY = process.stdout.isTTY && process.stdin.isTTY;
   let inkInstance = null;
   if (hasTTY) {
     console.clear();
-    inkInstance = ink.render(React.createElement(CodexDisplay, {
+    inkInstance = render(React.createElement(CodexDisplay, {
       messageBuffer,
-      logPath: process.env.DEBUG ? api.logger.getLogPath() : void 0,
+      logPath: process.env.DEBUG ? logger.getLogPath() : void 0,
       onExit: async () => {
-        api.logger.debug("[codex]: Exiting agent via Ctrl-C");
+        logger.debug("[codex]: Exiting agent via Ctrl-C");
         shouldExit = true;
         await handleAbort();
       }
@@ -751,7 +749,7 @@ async function runCodex(opts) {
           return acc;
         }
         for (const entry of entries) {
-          const full = node_path.join(dir, entry.name);
+          const full = join(dir, entry.name);
           if (entry.isDirectory()) {
             collectFilesRecursive2(full, acc);
           } else if (entry.isFile()) {
@@ -761,8 +759,8 @@ async function runCodex(opts) {
         return acc;
       };
       var collectFilesRecursive = collectFilesRecursive2;
-      const codexHomeDir = process.env.CODEX_HOME || node_path.join(os.homedir(), ".codex");
-      const rootDir = node_path.join(codexHomeDir, "sessions");
+      const codexHomeDir = process.env.CODEX_HOME || join(os.homedir(), ".codex");
+      const rootDir = join(codexHomeDir, "sessions");
       const candidates = collectFilesRecursive2(rootDir).filter((full) => full.endsWith(`-${sessionId}.jsonl`)).filter((full) => {
         try {
           return fs.statSync(full).isFile();
@@ -788,7 +786,7 @@ async function runCodex(opts) {
   });
   client.setPermissionHandler(permissionHandler);
   client.setHandler((msg) => {
-    api.logger.debug(`[Codex] MCP message: ${JSON.stringify(msg)}`);
+    logger.debug(`[Codex] MCP message: ${JSON.stringify(msg)}`);
     if (msg.type === "agent_message") {
       messageBuffer.addMessage(msg.message, "assistant");
     } else if (msg.type === "agent_reasoning_delta") ; else if (msg.type === "agent_reasoning") {
@@ -813,14 +811,14 @@ async function runCodex(opts) {
     }
     if (msg.type === "task_started") {
       if (!thinking) {
-        api.logger.debug("thinking started");
+        logger.debug("thinking started");
         thinking = true;
         session.keepAlive(thinking, "remote");
       }
     }
     if (msg.type === "task_complete" || msg.type === "turn_aborted") {
       if (thinking) {
-        api.logger.debug("thinking completed");
+        logger.debug("thinking completed");
         thinking = false;
         session.keepAlive(thinking, "remote");
       }
@@ -839,7 +837,7 @@ async function runCodex(opts) {
       session.sendCodexMessage({
         type: "message",
         message: msg.message,
-        id: node_crypto.randomUUID()
+        id: randomUUID()
       });
     }
     if (msg.type === "exec_command_begin" || msg.type === "exec_approval_request") {
@@ -849,7 +847,7 @@ async function runCodex(opts) {
         name: "CodexBash",
         callId: call_id,
         input: inputs,
-        id: node_crypto.randomUUID()
+        id: randomUUID()
       });
     }
     if (msg.type === "exec_command_end") {
@@ -858,13 +856,13 @@ async function runCodex(opts) {
         type: "tool-call-result",
         callId: call_id,
         output,
-        id: node_crypto.randomUUID()
+        id: randomUUID()
       });
     }
     if (msg.type === "token_count") {
       session.sendCodexMessage({
         ...msg,
-        id: node_crypto.randomUUID()
+        id: randomUUID()
       });
     }
     if (msg.type === "patch_apply_begin") {
@@ -880,7 +878,7 @@ async function runCodex(opts) {
           auto_approved,
           changes
         },
-        id: node_crypto.randomUUID()
+        id: randomUUID()
       });
     }
     if (msg.type === "patch_apply_end") {
@@ -900,7 +898,7 @@ async function runCodex(opts) {
           stderr,
           success
         },
-        id: node_crypto.randomUUID()
+        id: randomUUID()
       });
     }
     if (msg.type === "turn_diff") {
@@ -909,8 +907,8 @@ async function runCodex(opts) {
       }
     }
   });
-  const happyServer = await api.startHappyServer(session);
-  const bridgeCommand = node_path.join(api.projectPath(), "bin", "happy-mcp.mjs");
+  const happyServer = await startHappyServer(session);
+  const bridgeCommand = join(projectPath(), "bin", "happy-mcp.mjs");
   const mcpServers = {
     happy: {
       command: bridgeCommand,
@@ -919,9 +917,9 @@ async function runCodex(opts) {
   };
   let first = true;
   try {
-    api.logger.debug("[codex]: client.connect begin");
+    logger.debug("[codex]: client.connect begin");
     await client.connect();
-    api.logger.debug("[codex]: client.connect done");
+    logger.debug("[codex]: client.connect done");
     let wasCreated = false;
     let currentModeHash = null;
     let pending = null;
@@ -935,10 +933,10 @@ async function runCodex(opts) {
         const batch = await messageQueue.waitForMessagesAndGetAsString(waitSignal);
         if (!batch) {
           if (waitSignal.aborted && !shouldExit) {
-            api.logger.debug("[codex]: Wait aborted while idle; ignoring and continuing");
+            logger.debug("[codex]: Wait aborted while idle; ignoring and continuing");
             continue;
           }
-          api.logger.debug(`[codex]: batch=${!!batch}, shouldExit=${shouldExit}`);
+          logger.debug(`[codex]: batch=${!!batch}, shouldExit=${shouldExit}`);
           break;
         }
         message = batch;
@@ -947,20 +945,20 @@ async function runCodex(opts) {
         break;
       }
       if (wasCreated && currentModeHash && message.hash !== currentModeHash) {
-        api.logger.debug("[Codex] Mode changed \u2013 restarting Codex session");
+        logger.debug("[Codex] Mode changed \u2013 restarting Codex session");
         messageBuffer.addMessage("\u2550".repeat(40), "status");
         messageBuffer.addMessage("Starting new Codex session (mode changed)...", "status");
         try {
           const prevSessionId = client.getSessionId();
           nextExperimentalResume = findCodexResumeFile(prevSessionId);
           if (nextExperimentalResume) {
-            api.logger.debug(`[Codex] Found resume file for session ${prevSessionId}: ${nextExperimentalResume}`);
+            logger.debug(`[Codex] Found resume file for session ${prevSessionId}: ${nextExperimentalResume}`);
             messageBuffer.addMessage("Resuming previous context\u2026", "status");
           } else {
-            api.logger.debug("[Codex] No resume file found for previous session");
+            logger.debug("[Codex] No resume file found for previous session");
           }
         } catch (e) {
-          api.logger.debug("[Codex] Error while searching resume file", e);
+          logger.debug("[Codex] Error while searching resume file", e);
         }
         client.clearSession();
         wasCreated = false;
@@ -1036,7 +1034,7 @@ async function runCodex(opts) {
         })();
         if (!wasCreated) {
           const startConfig = {
-            prompt: first ? message.message + "\n\n" + constants.CHANGE_TITLE_INSTRUCTION : message.message,
+            prompt: first ? message.message + "\n\n" + CHANGE_TITLE_INSTRUCTION : message.message,
             sandbox,
             "approval-policy": approvalPolicy,
             config: { mcp_servers: mcpServers }
@@ -1048,12 +1046,12 @@ async function runCodex(opts) {
           if (nextExperimentalResume) {
             resumeFile = nextExperimentalResume;
             nextExperimentalResume = null;
-            api.logger.debug("[Codex] Using resume file from mode change:", resumeFile);
+            logger.debug("[Codex] Using resume file from mode change:", resumeFile);
           } else if (storedSessionIdForResume) {
             const abortResumeFile = findCodexResumeFile(storedSessionIdForResume);
             if (abortResumeFile) {
               resumeFile = abortResumeFile;
-              api.logger.debug("[Codex] Using resume file from aborted session:", resumeFile);
+              logger.debug("[Codex] Using resume file from aborted session:", resumeFile);
               messageBuffer.addMessage("Resuming from aborted session...", "status");
             }
             storedSessionIdForResume = null;
@@ -1072,10 +1070,10 @@ async function runCodex(opts) {
             message.message,
             { signal: abortController.signal }
           );
-          api.logger.debug("[Codex] continueSession response:", response2);
+          logger.debug("[Codex] continueSession response:", response2);
         }
       } catch (error) {
-        api.logger.warn("Error in codex session:", error);
+        logger.warn("Error in codex session:", error);
         const isAbortError = error instanceof Error && error.name === "AbortError";
         if (isAbortError) {
           messageBuffer.addMessage("Aborted by user", "status");
@@ -1085,7 +1083,7 @@ async function runCodex(opts) {
           session.sendSessionEvent({ type: "message", message: "Process exited unexpectedly" });
           if (client.hasActiveSession()) {
             storedSessionIdForResume = client.storeSessionForResume();
-            api.logger.debug("[Codex] Stored session after unexpected error:", storedSessionIdForResume);
+            logger.debug("[Codex] Stored session after unexpected error:", storedSessionIdForResume);
           }
         }
       } finally {
@@ -1104,54 +1102,53 @@ async function runCodex(opts) {
       }
     }
   } finally {
-    api.logger.debug("[codex]: Final cleanup start");
+    logger.debug("[codex]: Final cleanup start");
     logActiveHandles("cleanup-start");
     if (reconnectionHandle) {
-      api.logger.debug("[codex]: Cancelling offline reconnection");
+      logger.debug("[codex]: Cancelling offline reconnection");
       reconnectionHandle.cancel();
     }
     try {
-      api.logger.debug("[codex]: sendSessionDeath");
+      logger.debug("[codex]: sendSessionDeath");
       session.sendSessionDeath();
-      api.logger.debug("[codex]: flush begin");
+      logger.debug("[codex]: flush begin");
       await session.flush();
-      api.logger.debug("[codex]: flush done");
-      api.logger.debug("[codex]: session.close begin");
+      logger.debug("[codex]: flush done");
+      logger.debug("[codex]: session.close begin");
       await session.close();
-      api.logger.debug("[codex]: session.close done");
+      logger.debug("[codex]: session.close done");
     } catch (e) {
-      api.logger.debug("[codex]: Error while closing session", e);
+      logger.debug("[codex]: Error while closing session", e);
     }
-    api.logger.debug("[codex]: client.forceCloseSession begin");
+    logger.debug("[codex]: client.forceCloseSession begin");
     await client.forceCloseSession();
-    api.logger.debug("[codex]: client.forceCloseSession done");
-    api.logger.debug("[codex]: happyServer.stop");
+    logger.debug("[codex]: client.forceCloseSession done");
+    logger.debug("[codex]: happyServer.stop");
     happyServer.stop();
     if (process.stdin.isTTY) {
-      api.logger.debug("[codex]: setRawMode(false)");
+      logger.debug("[codex]: setRawMode(false)");
       try {
         process.stdin.setRawMode(false);
       } catch {
       }
     }
     if (hasTTY) {
-      api.logger.debug("[codex]: stdin.pause()");
+      logger.debug("[codex]: stdin.pause()");
       try {
         process.stdin.pause();
       } catch {
       }
     }
-    api.logger.debug("[codex]: clearInterval(keepAlive)");
+    logger.debug("[codex]: clearInterval(keepAlive)");
     clearInterval(keepAliveInterval);
     if (inkInstance) {
-      api.logger.debug("[codex]: inkInstance.unmount()");
+      logger.debug("[codex]: inkInstance.unmount()");
       inkInstance.unmount();
     }
     messageBuffer.clear();
     logActiveHandles("cleanup-end");
-    api.logger.debug("[codex]: Final cleanup completed");
+    logger.debug("[codex]: Final cleanup completed");
   }
 }
 
-exports.emitReadyIfIdle = emitReadyIfIdle;
-exports.runCodex = runCodex;
+export { emitReadyIfIdle, runCodex };

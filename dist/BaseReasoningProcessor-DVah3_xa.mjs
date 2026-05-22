@@ -1,7 +1,5 @@
-'use strict';
-
-var api = require('./registerKillSessionHandler-CKvxqaHB.cjs');
-var node_crypto = require('node:crypto');
+import { h as logger } from './registerKillSessionHandler-SomgBoYU.mjs';
+import { randomUUID } from 'node:crypto';
 
 class BasePermissionHandler {
   pendingRequests = /* @__PURE__ */ new Map();
@@ -16,7 +14,7 @@ class BasePermissionHandler {
    * This is critical for avoiding stale session references after onSessionSwap.
    */
   updateSession(newSession) {
-    api.logger.debug(`${this.getLogPrefix()} Session reference updated`);
+    logger.debug(`${this.getLogPrefix()} Session reference updated`);
     this.session = newSession;
     this.setupRpcHandler();
   }
@@ -29,7 +27,7 @@ class BasePermissionHandler {
       async (response) => {
         const pending = this.pendingRequests.get(response.id);
         if (!pending) {
-          api.logger.debug(`${this.getLogPrefix()} Permission request not found or already resolved`);
+          logger.debug(`${this.getLogPrefix()} Permission request not found or already resolved`);
           return;
         }
         this.pendingRequests.delete(response.id);
@@ -54,7 +52,7 @@ class BasePermissionHandler {
           };
           return res;
         });
-        api.logger.debug(`${this.getLogPrefix()} Permission ${response.approved ? "approved" : "denied"} for ${pending.toolName}`);
+        logger.debug(`${this.getLogPrefix()} Permission ${response.approved ? "approved" : "denied"} for ${pending.toolName}`);
       }
     );
   }
@@ -80,7 +78,7 @@ class BasePermissionHandler {
    */
   reset() {
     if (this.isResetting) {
-      api.logger.debug(`${this.getLogPrefix()} Reset already in progress, skipping`);
+      logger.debug(`${this.getLogPrefix()} Reset already in progress, skipping`);
       return;
     }
     this.isResetting = true;
@@ -91,7 +89,7 @@ class BasePermissionHandler {
         try {
           pending.reject(new Error("Session reset"));
         } catch (err) {
-          api.logger.debug(`${this.getLogPrefix()} Error rejecting pending request ${id}:`, err);
+          logger.debug(`${this.getLogPrefix()} Error rejecting pending request ${id}:`, err);
         }
       }
       this.session.updateAgentState((currentState) => {
@@ -111,7 +109,7 @@ class BasePermissionHandler {
           completedRequests
         };
       });
-      api.logger.debug(`${this.getLogPrefix()} Permission handler reset`);
+      logger.debug(`${this.getLogPrefix()} Permission handler reset`);
     } finally {
       this.isResetting = false;
     }
@@ -144,7 +142,7 @@ class BaseReasoningProcessor {
   handleSectionBreak() {
     this.finishCurrentToolCall("canceled");
     this.resetState();
-    api.logger.debug(`${this.getLogPrefix()} Section break - reset state`);
+    logger.debug(`${this.getLogPrefix()} Section break - reset state`);
   }
   /**
    * Process a reasoning delta/chunk and accumulate content.
@@ -155,7 +153,7 @@ class BaseReasoningProcessor {
       if (this.accumulator.startsWith("**")) {
         this.inTitleCapture = true;
         this.titleBuffer = this.accumulator.substring(2);
-        api.logger.debug(`${this.getLogPrefix()} Started title capture`);
+        logger.debug(`${this.getLogPrefix()} Started title capture`);
       } else if (this.accumulator.length > 0) {
         this.contentBuffer = this.accumulator;
       }
@@ -169,8 +167,8 @@ class BaseReasoningProcessor {
         this.inTitleCapture = false;
         this.currentTitle = title;
         this.contentBuffer = afterTitle;
-        this.currentCallId = node_crypto.randomUUID();
-        api.logger.debug(`${this.getLogPrefix()} Title captured: "${title}"`);
+        this.currentCallId = randomUUID();
+        logger.debug(`${this.getLogPrefix()} Title captured: "${title}"`);
         this.sendToolCallStart(title);
       }
     } else if (this.hasTitle) {
@@ -198,9 +196,9 @@ class BaseReasoningProcessor {
       input: {
         title
       },
-      id: node_crypto.randomUUID()
+      id: randomUUID()
     };
-    api.logger.debug(`${this.getLogPrefix()} Sending tool call start for: "${title}"`);
+    logger.debug(`${this.getLogPrefix()} Sending tool call start for: "${title}"`);
     this.onMessage?.(toolCall);
     this.toolCallStarted = true;
   }
@@ -211,7 +209,7 @@ class BaseReasoningProcessor {
   completeReasoning(fullText) {
     const text = fullText ?? this.accumulator;
     if (!text.trim() && !this.toolCallStarted) {
-      api.logger.debug(`${this.getLogPrefix()} Complete called but no content accumulated, skipping`);
+      logger.debug(`${this.getLogPrefix()} Complete called but no content accumulated, skipping`);
       return false;
     }
     let title;
@@ -223,9 +221,9 @@ class BaseReasoningProcessor {
         content = text.substring(titleEndIndex + 2).trim();
       }
     }
-    api.logger.debug(`${this.getLogPrefix()} Complete reasoning - Title: "${title}", Has content: ${content.length > 0}`);
+    logger.debug(`${this.getLogPrefix()} Complete reasoning - Title: "${title}", Has content: ${content.length > 0}`);
     if (title && !this.toolCallStarted) {
-      this.currentCallId = this.currentCallId || node_crypto.randomUUID();
+      this.currentCallId = this.currentCallId || randomUUID();
       this.sendToolCallStart(title);
     }
     if (this.toolCallStarted && this.currentCallId) {
@@ -236,17 +234,17 @@ class BaseReasoningProcessor {
           content,
           status: "completed"
         },
-        id: node_crypto.randomUUID()
+        id: randomUUID()
       };
-      api.logger.debug(`${this.getLogPrefix()} Sending tool call result`);
+      logger.debug(`${this.getLogPrefix()} Sending tool call result`);
       this.onMessage?.(toolResult);
     } else if (content.trim()) {
       const reasoningMessage = {
         type: "reasoning",
         message: content,
-        id: node_crypto.randomUUID()
+        id: randomUUID()
       };
-      api.logger.debug(`${this.getLogPrefix()} Sending reasoning message`);
+      logger.debug(`${this.getLogPrefix()} Sending reasoning message`);
       this.onMessage?.(reasoningMessage);
     }
     this.resetState();
@@ -256,7 +254,7 @@ class BaseReasoningProcessor {
    * Abort the current reasoning section.
    */
   abort() {
-    api.logger.debug(`${this.getLogPrefix()} Abort called`);
+    logger.debug(`${this.getLogPrefix()} Abort called`);
     this.finishCurrentToolCall("canceled");
     this.resetState();
   }
@@ -279,9 +277,9 @@ class BaseReasoningProcessor {
           content: this.contentBuffer || "",
           status
         },
-        id: node_crypto.randomUUID()
+        id: randomUUID()
       };
-      api.logger.debug(`${this.getLogPrefix()} Sending tool call result with status: ${status}`);
+      logger.debug(`${this.getLogPrefix()} Sending tool call result with status: ${status}`);
       this.onMessage?.(toolResult);
     }
   }
@@ -312,5 +310,4 @@ class BaseReasoningProcessor {
   }
 }
 
-exports.BasePermissionHandler = BasePermissionHandler;
-exports.BaseReasoningProcessor = BaseReasoningProcessor;
+export { BasePermissionHandler as B, BaseReasoningProcessor as a };
