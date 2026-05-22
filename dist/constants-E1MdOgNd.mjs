@@ -1,17 +1,11 @@
-'use strict';
-
-var index = require('./index-RjxCD9Z6.cjs');
+import { t as trimIdent } from './index-CCEKMQBr.mjs';
 
 const GEMINI_API_KEY_ENV = "GEMINI_API_KEY";
 const GOOGLE_API_KEY_ENV = "GOOGLE_API_KEY";
 const GEMINI_MODEL_ENV = "GEMINI_MODEL";
 const DEFAULT_GEMINI_MODEL = "gemini-2.5-pro";
-const CHANGE_TITLE_INSTRUCTION = index.trimIdent(
+const CHANGE_TITLE_INSTRUCTION = trimIdent(
   `Based on this message, call functions.happy__change_title to change chat session title that would represent the current task. If chat idea would change dramatically - call this function again to update the title.`
 );
 
-exports.CHANGE_TITLE_INSTRUCTION = CHANGE_TITLE_INSTRUCTION;
-exports.DEFAULT_GEMINI_MODEL = DEFAULT_GEMINI_MODEL;
-exports.GEMINI_API_KEY_ENV = GEMINI_API_KEY_ENV;
-exports.GEMINI_MODEL_ENV = GEMINI_MODEL_ENV;
-exports.GOOGLE_API_KEY_ENV = GOOGLE_API_KEY_ENV;
+export { CHANGE_TITLE_INSTRUCTION as C, DEFAULT_GEMINI_MODEL as D, GEMINI_MODEL_ENV as G, GEMINI_API_KEY_ENV as a, GOOGLE_API_KEY_ENV as b };
