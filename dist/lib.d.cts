@@ -1023,6 +1023,7 @@ declare class ApiClient {
         tag: string;
         metadata: Metadata;
         state: AgentState | null;
+        existingEncryptionKey?: Uint8Array;
     }): Promise<Session | null>;
     /**
      * Register or update machine with the server

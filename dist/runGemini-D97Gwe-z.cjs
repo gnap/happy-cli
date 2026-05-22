@@ -1,47 +1,49 @@
-import { useStdout, useInput, Box, Text, render } from 'ink';
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { randomUUID } from 'node:crypto';
-import { join } from 'node:path';
-import { l as logger, q as packageJson, u as delay, o as connectionState, A as ApiClient, h as readSettings, i as initialMachineMetadata, n as notifyDaemonSessionStarted, M as MessageQueue2, j as hashObject, k as registerKillSessionHandler, s as startHappyServer, p as projectPath, m as stopCaffeinate } from './registerKillSessionHandler-Doe9-t5n.mjs';
-import { c as createSessionMetadata, s as setupOfflineReconnection } from './setupOfflineReconnection-PCAltIih.mjs';
-import { M as MessageBuffer } from './index-CCEKMQBr.mjs';
-import { spawn } from 'node:child_process';
-import { ndJsonStream, ClientSideConnection } from '@agentclientprotocol/sdk';
-import { a as GEMINI_API_KEY_ENV, b as GOOGLE_API_KEY_ENV, G as GEMINI_MODEL_ENV, C as CHANGE_TITLE_INSTRUCTION } from './constants-E1MdOgNd.mjs';
-import { readGeminiLocalConfig, determineGeminiModel, getGeminiModelSource, getInitialGeminiModel, saveGeminiModelToConfig } from './config-BN2wqYFI.mjs';
-import { B as BasePermissionHandler, a as BaseReasoningProcessor } from './BaseReasoningProcessor-D9Jj8oPX.mjs';
-import 'zod';
-import 'fs/promises';
-import 'os';
-import 'tmp';
-import 'axios';
-import 'node:events';
-import 'socket.io-client';
-import 'tweetnacl';
-import 'child_process';
-import 'util';
-import 'crypto';
-import 'path';
-import 'url';
-import 'expo-server-sdk';
-import 'chalk';
-import 'qrcode-terminal';
-import 'node:fs/promises';
-import 'node:fs';
-import 'open';
-import 'fs';
-import 'ps-list';
-import 'cross-spawn';
-import 'fastify';
-import 'fastify-type-provider-zod';
-import '@modelcontextprotocol/sdk/server/mcp.js';
-import 'node:http';
-import '@modelcontextprotocol/sdk/server/streamableHttp.js';
-import 'node:os';
-import 'node:readline';
-import 'node:url';
-import 'node:util';
-import 'http';
+'use strict';
+
+var ink = require('ink');
+var React = require('react');
+var node_crypto = require('node:crypto');
+var node_path = require('node:path');
+var api = require('./registerKillSessionHandler-BeCBC9uH.cjs');
+var setupOfflineReconnection = require('./setupOfflineReconnection-B5RN4-I6.cjs');
+var index = require('./index-RjxCD9Z6.cjs');
+var node_child_process = require('node:child_process');
+var sdk = require('@agentclientprotocol/sdk');
+var constants = require('./constants-CxM4GfNe.cjs');
+var config = require('./config-CXNwO-Oz.cjs');
+var BaseReasoningProcessor = require('./BaseReasoningProcessor-DYsqJQD8.cjs');
+require('zod');
+require('fs/promises');
+require('os');
+require('tmp');
+require('axios');
+require('node:events');
+require('socket.io-client');
+require('tweetnacl');
+require('child_process');
+require('util');
+require('crypto');
+require('path');
+require('url');
+require('expo-server-sdk');
+require('chalk');
+require('qrcode-terminal');
+require('node:fs/promises');
+require('node:fs');
+require('open');
+require('fs');
+require('ps-list');
+require('cross-spawn');
+require('fastify');
+require('fastify-type-provider-zod');
+require('@modelcontextprotocol/sdk/server/mcp.js');
+require('node:http');
+require('@modelcontextprotocol/sdk/server/streamableHttp.js');
+require('node:os');
+require('node:readline');
+require('node:url');
+require('node:util');
+require('http');
 
 const DEFAULT_TIMEOUTS = {
   /** Default initialization timeout: 60 seconds */
@@ -324,7 +326,7 @@ class GeminiTransport {
     }
     if (toolName === "other" || toolName === "Unknown tool") {
       const inputKeys = input && typeof input === "object" ? Object.keys(input) : [];
-      logger.debug(
+      api.logger.debug(
         `[GeminiTransport] Unknown tool pattern - toolCallId: "${toolCallId}", toolName: "${toolName}", inputKeys: [${inputKeys.join(", ")}]. Consider adding a new pattern to GEMINI_TOOL_PATTERNS if this tool appears frequently.`
       );
     }
@@ -394,7 +396,7 @@ function handleAgentMessageChunk(update, ctx) {
       payload: { text }
     });
   } else {
-    logger.debug(`[AcpBackend] Received message chunk (length: ${text.length}): ${text.substring(0, 50)}...`);
+    api.logger.debug(`[AcpBackend] Received message chunk (length: ${text.length}): ${text.substring(0, 50)}...`);
     ctx.emit({
       type: "model-output",
       textDelta: text
@@ -403,10 +405,10 @@ function handleAgentMessageChunk(update, ctx) {
     const idleTimeoutMs = ctx.transport.getIdleTimeout?.() ?? DEFAULT_IDLE_TIMEOUT_MS;
     ctx.setIdleTimeout(() => {
       if (ctx.activeToolCalls.size === 0) {
-        logger.debug("[AcpBackend] No more chunks received, emitting idle status");
+        api.logger.debug("[AcpBackend] No more chunks received, emitting idle status");
         ctx.emitIdleStatus();
       } else {
-        logger.debug(`[AcpBackend] Delaying idle status - ${ctx.activeToolCalls.size} active tool calls`);
+        api.logger.debug(`[AcpBackend] Delaying idle status - ${ctx.activeToolCalls.size} active tool calls`);
       }
     }, idleTimeoutMs);
   }
@@ -423,7 +425,7 @@ function handleAgentThoughtChunk(update, ctx) {
   }
   if (ctx.activeToolCalls.size > 0) {
     const activeToolCallsList = Array.from(ctx.activeToolCalls);
-    logger.debug(`[AcpBackend] \u{1F4AD} Thinking chunk received (${text.length} chars) during active tool calls: ${activeToolCallsList.join(", ")}`);
+    api.logger.debug(`[AcpBackend] \u{1F4AD} Thinking chunk received (${text.length} chars) during active tool calls: ${activeToolCallsList.join(", ")}`);
   }
   ctx.emit({
     type: "event",
@@ -441,28 +443,28 @@ function startToolCall(toolCallId, toolKind, update, ctx, source) {
   ctx.toolCallIdToNameMap.set(toolCallId, realToolName);
   ctx.activeToolCalls.add(toolCallId);
   ctx.toolCallStartTimes.set(toolCallId, startTime);
-  logger.debug(`[AcpBackend] \u23F1\uFE0F Set startTime for ${toolCallId} at ${new Date(startTime).toISOString()} (from ${source})`);
-  logger.debug(`[AcpBackend] \u{1F527} Tool call START: ${toolCallId} (${toolKind} -> ${realToolName})${isInvestigation ? " [INVESTIGATION TOOL]" : ""}`);
+  api.logger.debug(`[AcpBackend] \u23F1\uFE0F Set startTime for ${toolCallId} at ${new Date(startTime).toISOString()} (from ${source})`);
+  api.logger.debug(`[AcpBackend] \u{1F527} Tool call START: ${toolCallId} (${toolKind} -> ${realToolName})${isInvestigation ? " [INVESTIGATION TOOL]" : ""}`);
   if (isInvestigation) {
-    logger.debug(`[AcpBackend] \u{1F50D} Investigation tool detected - extended timeout (10min) will be used`);
+    api.logger.debug(`[AcpBackend] \u{1F50D} Investigation tool detected - extended timeout (10min) will be used`);
   }
   const timeoutMs = ctx.transport.getToolCallTimeout?.(toolCallId, toolKindStr) ?? DEFAULT_TOOL_CALL_TIMEOUT_MS;
   if (!ctx.toolCallTimeouts.has(toolCallId)) {
     const timeout = setTimeout(() => {
       const duration = formatDuration(ctx.toolCallStartTimes.get(toolCallId));
-      logger.debug(`[AcpBackend] \u23F1\uFE0F Tool call TIMEOUT (from ${source}): ${toolCallId} (${toolKind}) after ${(timeoutMs / 1e3).toFixed(0)}s - Duration: ${duration}, removing from active set`);
+      api.logger.debug(`[AcpBackend] \u23F1\uFE0F Tool call TIMEOUT (from ${source}): ${toolCallId} (${toolKind}) after ${(timeoutMs / 1e3).toFixed(0)}s - Duration: ${duration}, removing from active set`);
       ctx.activeToolCalls.delete(toolCallId);
       ctx.toolCallStartTimes.delete(toolCallId);
       ctx.toolCallTimeouts.delete(toolCallId);
       if (ctx.activeToolCalls.size === 0) {
-        logger.debug("[AcpBackend] No more active tool calls after timeout, emitting idle status");
+        api.logger.debug("[AcpBackend] No more active tool calls after timeout, emitting idle status");
         ctx.emitIdleStatus();
       }
     }, timeoutMs);
     ctx.toolCallTimeouts.set(toolCallId, timeout);
-    logger.debug(`[AcpBackend] \u23F1\uFE0F Set timeout for ${toolCallId}: ${(timeoutMs / 1e3).toFixed(0)}s${isInvestigation ? " (investigation tool)" : ""}`);
+    api.logger.debug(`[AcpBackend] \u23F1\uFE0F Set timeout for ${toolCallId}: ${(timeoutMs / 1e3).toFixed(0)}s${isInvestigation ? " (investigation tool)" : ""}`);
   } else {
-    logger.debug(`[AcpBackend] Timeout already set for ${toolCallId}, skipping`);
+    api.logger.debug(`[AcpBackend] Timeout already set for ${toolCallId}, skipping`);
   }
   ctx.clearIdleTimeout();
   ctx.emit({ type: "status", status: "running" });
@@ -471,7 +473,7 @@ function startToolCall(toolCallId, toolKind, update, ctx, source) {
     args.locations = update.locations;
   }
   if (isInvestigation && args.objective) {
-    logger.debug(`[AcpBackend] \u{1F50D} Investigation tool objective: ${String(args.objective).substring(0, 100)}...`);
+    api.logger.debug(`[AcpBackend] \u{1F50D} Investigation tool objective: ${String(args.objective).substring(0, 100)}...`);
   }
   ctx.emit({
     type: "tool-call",
@@ -491,7 +493,7 @@ function completeToolCall(toolCallId, toolKind, content, ctx) {
     clearTimeout(timeout);
     ctx.toolCallTimeouts.delete(toolCallId);
   }
-  logger.debug(`[AcpBackend] \u2705 Tool call COMPLETED: ${toolCallId} (${toolKindStr}) - Duration: ${duration}. Active tool calls: ${ctx.activeToolCalls.size}`);
+  api.logger.debug(`[AcpBackend] \u2705 Tool call COMPLETED: ${toolCallId} (${toolKindStr}) - Duration: ${duration}. Active tool calls: ${ctx.activeToolCalls.size}`);
   ctx.emit({
     type: "tool-result",
     toolName: toolKindStr,
@@ -500,7 +502,7 @@ function completeToolCall(toolCallId, toolKind, content, ctx) {
   });
   if (ctx.activeToolCalls.size === 0) {
     ctx.clearIdleTimeout();
-    logger.debug("[AcpBackend] All tool calls completed, emitting idle status");
+    api.logger.debug("[AcpBackend] All tool calls completed, emitting idle status");
     ctx.emitIdleStatus();
   }
 }
@@ -513,17 +515,17 @@ function failToolCall(toolCallId, status, toolKind, content, ctx) {
   if (isInvestigation) {
     const durationStr2 = formatDuration(startTime);
     const durationMinutes = formatDurationMinutes(startTime);
-    logger.debug(`[AcpBackend] \u{1F50D} Investigation tool ${status.toUpperCase()} after ${durationMinutes} minutes (${durationStr2})`);
+    api.logger.debug(`[AcpBackend] \u{1F50D} Investigation tool ${status.toUpperCase()} after ${durationMinutes} minutes (${durationStr2})`);
     if (duration) {
       const threeMinutes = 3 * 60 * 1e3;
       const tolerance = 5e3;
       if (Math.abs(duration - threeMinutes) < tolerance) {
-        logger.debug(`[AcpBackend] \u{1F50D} \u26A0\uFE0F Investigation tool failed at ~3 minutes - likely Gemini CLI timeout, not our timeout`);
+        api.logger.debug(`[AcpBackend] \u{1F50D} \u26A0\uFE0F Investigation tool failed at ~3 minutes - likely Gemini CLI timeout, not our timeout`);
       }
     }
-    logger.debug(`[AcpBackend] \u{1F50D} Investigation tool FAILED - full content:`, JSON.stringify(content, null, 2));
-    logger.debug(`[AcpBackend] \u{1F50D} Investigation tool timeout status BEFORE cleanup: ${hadTimeout ? "timeout was set" : "no timeout was set"}`);
-    logger.debug(`[AcpBackend] \u{1F50D} Investigation tool startTime status BEFORE cleanup: ${startTime ? `set at ${new Date(startTime).toISOString()}` : "not set"}`);
+    api.logger.debug(`[AcpBackend] \u{1F50D} Investigation tool FAILED - full content:`, JSON.stringify(content, null, 2));
+    api.logger.debug(`[AcpBackend] \u{1F50D} Investigation tool timeout status BEFORE cleanup: ${hadTimeout ? "timeout was set" : "no timeout was set"}`);
+    api.logger.debug(`[AcpBackend] \u{1F50D} Investigation tool startTime status BEFORE cleanup: ${startTime ? `set at ${new Date(startTime).toISOString()}` : "not set"}`);
   }
   ctx.activeToolCalls.delete(toolCallId);
   ctx.toolCallStartTimes.delete(toolCallId);
@@ -531,17 +533,17 @@ function failToolCall(toolCallId, status, toolKind, content, ctx) {
   if (timeout) {
     clearTimeout(timeout);
     ctx.toolCallTimeouts.delete(toolCallId);
-    logger.debug(`[AcpBackend] Cleared timeout for ${toolCallId} (tool call ${status})`);
+    api.logger.debug(`[AcpBackend] Cleared timeout for ${toolCallId} (tool call ${status})`);
   } else {
-    logger.debug(`[AcpBackend] No timeout found for ${toolCallId} (tool call ${status}) - timeout may not have been set`);
+    api.logger.debug(`[AcpBackend] No timeout found for ${toolCallId} (tool call ${status}) - timeout may not have been set`);
   }
   const durationStr = formatDuration(startTime);
-  logger.debug(`[AcpBackend] \u274C Tool call ${status.toUpperCase()}: ${toolCallId} (${toolKindStr}) - Duration: ${durationStr}. Active tool calls: ${ctx.activeToolCalls.size}`);
+  api.logger.debug(`[AcpBackend] \u274C Tool call ${status.toUpperCase()}: ${toolCallId} (${toolKindStr}) - Duration: ${durationStr}. Active tool calls: ${ctx.activeToolCalls.size}`);
   const errorDetail = extractErrorDetail(content);
   if (errorDetail) {
-    logger.debug(`[AcpBackend] \u274C Tool call error details: ${errorDetail.substring(0, 500)}`);
+    api.logger.debug(`[AcpBackend] \u274C Tool call error details: ${errorDetail.substring(0, 500)}`);
   } else {
-    logger.debug(`[AcpBackend] \u274C Tool call ${status} but no error details in content`);
+    api.logger.debug(`[AcpBackend] \u274C Tool call ${status} but no error details in content`);
   }
   ctx.emit({
     type: "tool-result",
@@ -551,7 +553,7 @@ function failToolCall(toolCallId, status, toolKind, content, ctx) {
   });
   if (ctx.activeToolCalls.size === 0) {
     ctx.clearIdleTimeout();
-    logger.debug("[AcpBackend] All tool calls completed/failed, emitting idle status");
+    api.logger.debug("[AcpBackend] All tool calls completed/failed, emitting idle status");
     ctx.emitIdleStatus();
   }
 }
@@ -559,7 +561,7 @@ function handleToolCallUpdate(update, ctx) {
   const status = update.status;
   const toolCallId = update.toolCallId;
   if (!toolCallId) {
-    logger.debug("[AcpBackend] Tool call update without toolCallId:", update);
+    api.logger.debug("[AcpBackend] Tool call update without toolCallId:", update);
     return { handled: false };
   }
   const toolKind = update.kind || "unknown";
@@ -569,7 +571,7 @@ function handleToolCallUpdate(update, ctx) {
       toolCallCountSincePrompt++;
       startToolCall(toolCallId, toolKind, update, ctx, "tool_call_update");
     } else {
-      logger.debug(`[AcpBackend] Tool call ${toolCallId} already tracked, status: ${status}`);
+      api.logger.debug(`[AcpBackend] Tool call ${toolCallId} already tracked, status: ${status}`);
     }
   } else if (status === "completed") {
     completeToolCall(toolCallId, toolKind, update.content, ctx);
@@ -581,14 +583,14 @@ function handleToolCallUpdate(update, ctx) {
 function handleToolCall(update, ctx) {
   const toolCallId = update.toolCallId;
   const status = update.status;
-  logger.debug(`[AcpBackend] Received tool_call: toolCallId=${toolCallId}, status=${status}, kind=${update.kind}`);
+  api.logger.debug(`[AcpBackend] Received tool_call: toolCallId=${toolCallId}, status=${status}, kind=${update.kind}`);
   const isInProgress = !status || status === "in_progress" || status === "pending";
   if (!toolCallId || !isInProgress) {
-    logger.debug(`[AcpBackend] Tool call ${toolCallId} not in progress (status: ${status}), skipping`);
+    api.logger.debug(`[AcpBackend] Tool call ${toolCallId} not in progress (status: ${status}), skipping`);
     return { handled: false };
   }
   if (ctx.activeToolCalls.has(toolCallId)) {
-    logger.debug(`[AcpBackend] Tool call ${toolCallId} already in active set, skipping`);
+    api.logger.debug(`[AcpBackend] Tool call ${toolCallId} already in active set, skipping`);
     return { handled: true };
   }
   startToolCall(toolCallId, update.kind, update, ctx, "tool_call");
@@ -645,7 +647,7 @@ function nodeToWebStreams(stdin, stdout) {
       return new Promise((resolve, reject) => {
         const ok = stdin.write(chunk, (err) => {
           if (err) {
-            logger.debug(`[AcpBackend] Error writing to stdin:`, err);
+            api.logger.debug(`[AcpBackend] Error writing to stdin:`, err);
             reject(err);
           }
         });
@@ -674,7 +676,7 @@ function nodeToWebStreams(stdin, stdout) {
         controller.close();
       });
       stdout.on("error", (err) => {
-        logger.debug(`[AcpBackend] Stdout error:`, err);
+        api.logger.debug(`[AcpBackend] Stdout error:`, err);
         controller.error(err);
       });
     },
@@ -696,9 +698,9 @@ async function withRetry(operation, options) {
           options.baseDelayMs * Math.pow(2, attempt - 1),
           options.maxDelayMs
         );
-        logger.debug(`[AcpBackend] ${options.operationName} failed (attempt ${attempt}/${options.maxAttempts}): ${lastError.message}. Retrying in ${delayMs}ms...`);
+        api.logger.debug(`[AcpBackend] ${options.operationName} failed (attempt ${attempt}/${options.maxAttempts}): ${lastError.message}. Retrying in ${delayMs}ms...`);
         options.onRetry?.(attempt, lastError);
-        await delay(delayMs);
+        await api.delay(delayMs);
       }
     }
   }
@@ -748,7 +750,7 @@ class AcpBackend {
       try {
         listener(msg);
       } catch (error) {
-        logger.warn("[AcpBackend] Error in message handler:", error);
+        api.logger.warn("[AcpBackend] Error in message handler:", error);
       }
     }
   }
@@ -756,21 +758,21 @@ class AcpBackend {
     if (this.disposed) {
       throw new Error("Backend has been disposed");
     }
-    const sessionId = randomUUID();
+    const sessionId = node_crypto.randomUUID();
     this.emit({ type: "status", status: "starting" });
     try {
-      logger.debug(`[AcpBackend] Starting session: ${sessionId}`);
+      api.logger.debug(`[AcpBackend] Starting session: ${sessionId}`);
       const args = this.options.args || [];
       if (process.platform === "win32") {
         const fullCommand = [this.options.command, ...args].join(" ");
-        this.process = spawn("cmd.exe", ["/c", fullCommand], {
+        this.process = node_child_process.spawn("cmd.exe", ["/c", fullCommand], {
           cwd: this.options.cwd,
           env: { ...process.env, ...this.options.env },
           stdio: ["pipe", "pipe", "pipe"],
           windowsHide: true
         });
       } else {
-        this.process = spawn(this.options.command, args, {
+        this.process = node_child_process.spawn(this.options.command, args, {
           cwd: this.options.cwd,
           env: { ...process.env, ...this.options.env },
           // Use 'pipe' for all stdio to capture output without printing to console
@@ -792,9 +794,9 @@ class AcpBackend {
           hasActiveInvestigation
         };
         if (hasActiveInvestigation) {
-          logger.debug(`[AcpBackend] \u{1F50D} Agent stderr (during investigation): ${text.trim()}`);
+          api.logger.debug(`[AcpBackend] \u{1F50D} Agent stderr (during investigation): ${text.trim()}`);
         } else {
-          logger.debug(`[AcpBackend] Agent stderr: ${text.trim()}`);
+          api.logger.debug(`[AcpBackend] Agent stderr: ${text.trim()}`);
         }
         if (this.transport.handleStderr) {
           const result = this.transport.handleStderr(text, context);
@@ -804,12 +806,12 @@ class AcpBackend {
         }
       });
       this.process.on("error", (err) => {
-        logger.debug(`[AcpBackend] Process error:`, err);
+        api.logger.debug(`[AcpBackend] Process error:`, err);
         this.emit({ type: "status", status: "error", detail: err.message });
       });
       this.process.on("exit", (code, signal) => {
         if (!this.disposed && code !== 0 && code !== null) {
-          logger.debug(`[AcpBackend] Process exited with code ${code}, signal ${signal}`);
+          api.logger.debug(`[AcpBackend] Process exited with code ${code}, signal ${signal}`);
           this.emit({ type: "status", status: "stopped", detail: `Exit code: ${code}` });
         }
       });
@@ -842,7 +844,7 @@ class AcpBackend {
                   }
                 }
                 if (filteredCount > 0) {
-                  logger.debug(`[AcpBackend] Filtered out ${filteredCount} non-JSON lines from ${transport.agentName} stdout`);
+                  api.logger.debug(`[AcpBackend] Filtered out ${filteredCount} non-JSON lines from ${transport.agentName} stdout`);
                 }
                 controller.close();
                 break;
@@ -863,14 +865,14 @@ class AcpBackend {
               }
             }
           } catch (error) {
-            logger.debug(`[AcpBackend] Error filtering stdout stream:`, error);
+            api.logger.debug(`[AcpBackend] Error filtering stdout stream:`, error);
             controller.error(error);
           } finally {
             reader.releaseLock();
           }
         }
       });
-      const stream = ndJsonStream(writable, filteredReadable);
+      const stream = sdk.ndJsonStream(writable, filteredReadable);
       const client = {
         sessionUpdate: async (params) => {
           this.handleSessionUpdate(params);
@@ -879,7 +881,7 @@ class AcpBackend {
           const extendedParams = params;
           const toolCall = extendedParams.toolCall;
           let toolName = toolCall?.kind || toolCall?.toolName || extendedParams.kind || "Unknown tool";
-          const toolCallId = toolCall?.id || randomUUID();
+          const toolCallId = toolCall?.id || node_crypto.randomUUID();
           const permissionId = toolCallId;
           let input = {};
           if (toolCall) {
@@ -893,12 +895,12 @@ class AcpBackend {
           };
           toolName = this.transport.determineToolName?.(toolName, toolCallId, input, context) ?? toolName;
           if (toolName !== (toolCall?.kind || toolCall?.toolName || extendedParams.kind || "Unknown tool")) {
-            logger.debug(`[AcpBackend] Detected tool name: ${toolName} from toolCallId: ${toolCallId}`);
+            api.logger.debug(`[AcpBackend] Detected tool name: ${toolName} from toolCallId: ${toolCallId}`);
           }
           this.toolCallCountSincePrompt++;
           const options = extendedParams.options || [];
-          logger.debug(`[AcpBackend] Permission request: tool=${toolName}, toolCallId=${toolCallId}, input=`, JSON.stringify(input));
-          logger.debug(`[AcpBackend] Permission request params structure:`, JSON.stringify({
+          api.logger.debug(`[AcpBackend] Permission request: tool=${toolName}, toolCallId=${toolCallId}, input=`, JSON.stringify(input));
+          api.logger.debug(`[AcpBackend] Permission request params structure:`, JSON.stringify({
             hasToolCall: !!toolCall,
             toolCallKind: toolCall?.kind,
             toolCallId: toolCall?.id,
@@ -966,7 +968,7 @@ class AcpBackend {
               }
               return { outcome: { outcome: "selected", optionId } };
             } catch (error) {
-              logger.debug("[AcpBackend] Error in permission handler:", error);
+              api.logger.debug("[AcpBackend] Error in permission handler:", error);
               return { outcome: { outcome: "selected", optionId: "cancel" } };
             }
           }
@@ -977,7 +979,7 @@ class AcpBackend {
           return { outcome: { outcome: "selected", optionId: defaultOptionId } };
         }
       };
-      this.connection = new ClientSideConnection(
+      this.connection = new sdk.ClientSideConnection(
         (agent) => client,
         stream
       );
@@ -991,11 +993,11 @@ class AcpBackend {
         },
         clientInfo: {
           name: "happy-cli",
-          version: packageJson.version
+          version: api.packageJson.version
         }
       };
       const initTimeout = this.transport.getInitTimeout();
-      logger.debug(`[AcpBackend] Initializing connection (timeout: ${initTimeout}ms)...`);
+      api.logger.debug(`[AcpBackend] Initializing connection (timeout: ${initTimeout}ms)...`);
       await withRetry(
         async () => {
           let timeoutHandle = null;
@@ -1028,7 +1030,7 @@ class AcpBackend {
           maxDelayMs: RETRY_CONFIG.maxDelayMs
         }
       );
-      logger.debug(`[AcpBackend] Initialize completed`);
+      api.logger.debug(`[AcpBackend] Initialize completed`);
       const mcpServers = this.options.mcpServers ? Object.entries(this.options.mcpServers).map(([name, config]) => ({
         name,
         command: config.command,
@@ -1039,7 +1041,7 @@ class AcpBackend {
         cwd: this.options.cwd,
         mcpServers
       };
-      logger.debug(`[AcpBackend] Creating new session...`);
+      api.logger.debug(`[AcpBackend] Creating new session...`);
       const sessionResponse = await withRetry(
         async () => {
           let timeoutHandle = null;
@@ -1073,17 +1075,17 @@ class AcpBackend {
         }
       );
       this.acpSessionId = sessionResponse.sessionId;
-      logger.debug(`[AcpBackend] Session created: ${this.acpSessionId}`);
+      api.logger.debug(`[AcpBackend] Session created: ${this.acpSessionId}`);
       this.emitIdleStatus();
       if (initialPrompt) {
         this.sendPrompt(sessionId, initialPrompt).catch((error) => {
-          logger.debug("[AcpBackend] Error sending initial prompt:", error);
+          api.logger.debug("[AcpBackend] Error sending initial prompt:", error);
           this.emit({ type: "status", status: "error", detail: String(error) });
         });
       }
       return { sessionId };
     } catch (error) {
-      logger.debug("[AcpBackend] Error starting session:", error);
+      api.logger.debug("[AcpBackend] Error starting session:", error);
       this.emit({
         type: "status",
         status: "error",
@@ -1124,12 +1126,12 @@ class AcpBackend {
     const notification = params;
     const update = notification.update;
     if (!update) {
-      logger.debug("[AcpBackend] Received session update without update field:", params);
+      api.logger.debug("[AcpBackend] Received session update without update field:", params);
       return;
     }
     const sessionUpdateType = update.sessionUpdate;
     if (sessionUpdateType !== "agent_message_chunk") {
-      logger.debug(`[AcpBackend] Received session update: ${sessionUpdateType}`, JSON.stringify({
+      api.logger.debug(`[AcpBackend] Received session update: ${sessionUpdateType}`, JSON.stringify({
         sessionUpdate: sessionUpdateType,
         toolCallId: update.toolCallId,
         status: update.status,
@@ -1164,7 +1166,7 @@ class AcpBackend {
     const updateTypeStr = sessionUpdateType;
     const handledTypes = ["agent_message_chunk", "tool_call_update", "agent_thought_chunk", "tool_call"];
     if (updateTypeStr && !handledTypes.includes(updateTypeStr) && !update.messageChunk && !update.plan && !update.thinking) {
-      logger.debug(`[AcpBackend] Unhandled session update type: ${updateTypeStr}`, JSON.stringify(update, null, 2));
+      api.logger.debug(`[AcpBackend] Unhandled session update type: ${updateTypeStr}`, JSON.stringify(update, null, 2));
     }
   }
   // Promise resolver for waitForIdle - set when waiting for response to complete
@@ -1175,7 +1177,7 @@ class AcpBackend {
     this.toolCallCountSincePrompt = 0;
     this.recentPromptHadChangeTitle = promptHasChangeTitle;
     if (promptHasChangeTitle) {
-      logger.debug('[AcpBackend] Prompt contains change_title instruction - will auto-approve first "other" tool call if it matches pattern');
+      api.logger.debug('[AcpBackend] Prompt contains change_title instruction - will auto-approve first "other" tool call if it matches pattern');
     }
     if (this.disposed) {
       throw new Error("Backend has been disposed");
@@ -1186,8 +1188,8 @@ class AcpBackend {
     this.emit({ type: "status", status: "running" });
     this.waitingForResponse = true;
     try {
-      logger.debug(`[AcpBackend] Sending prompt (length: ${prompt.length}): ${prompt.substring(0, 100)}...`);
-      logger.debug(`[AcpBackend] Full prompt: ${prompt}`);
+      api.logger.debug(`[AcpBackend] Sending prompt (length: ${prompt.length}): ${prompt.substring(0, 100)}...`);
+      api.logger.debug(`[AcpBackend] Full prompt: ${prompt}`);
       const contentBlock = {
         type: "text",
         text: prompt
@@ -1196,11 +1198,11 @@ class AcpBackend {
         sessionId: this.acpSessionId,
         prompt: [contentBlock]
       };
-      logger.debug(`[AcpBackend] Prompt request:`, JSON.stringify(promptRequest, null, 2));
+      api.logger.debug(`[AcpBackend] Prompt request:`, JSON.stringify(promptRequest, null, 2));
       await this.connection.prompt(promptRequest);
-      logger.debug("[AcpBackend] Prompt request sent to ACP connection");
+      api.logger.debug("[AcpBackend] Prompt request sent to ACP connection");
     } catch (error) {
-      logger.debug("[AcpBackend] Error sending prompt:", error);
+      api.logger.debug("[AcpBackend] Error sending prompt:", error);
       this.waitingForResponse = false;
       let errorDetail;
       if (error instanceof Error) {
@@ -1254,7 +1256,7 @@ class AcpBackend {
   emitIdleStatus() {
     this.emit({ type: "status", status: "idle" });
     if (this.idleResolver) {
-      logger.debug("[AcpBackend] Resolving idle waiter");
+      api.logger.debug("[AcpBackend] Resolving idle waiter");
       this.idleResolver();
     }
   }
@@ -1266,7 +1268,7 @@ class AcpBackend {
       await this.connection.cancel({ sessionId: this.acpSessionId });
       this.emit({ type: "status", status: "stopped", detail: "Cancelled by user" });
     } catch (error) {
-      logger.debug("[AcpBackend] Error cancelling:", error);
+      api.logger.debug("[AcpBackend] Error cancelling:", error);
     }
   }
   /**
@@ -1285,12 +1287,12 @@ class AcpBackend {
    * @param approved - Whether the permission was granted
    */
   async respondToPermission(requestId, approved) {
-    logger.debug(`[AcpBackend] Permission response event (UI only): ${requestId} = ${approved}`);
+    api.logger.debug(`[AcpBackend] Permission response event (UI only): ${requestId} = ${approved}`);
     this.emit({ type: "permission-response", id: requestId, approved });
   }
   async dispose() {
     if (this.disposed) return;
-    logger.debug("[AcpBackend] Disposing backend");
+    api.logger.debug("[AcpBackend] Disposing backend");
     this.disposed = true;
     if (this.connection && this.acpSessionId) {
       try {
@@ -1300,7 +1302,7 @@ class AcpBackend {
           // 2s timeout for graceful shutdown
         ]);
       } catch (error) {
-        logger.debug("[AcpBackend] Error during graceful shutdown:", error);
+        api.logger.debug("[AcpBackend] Error during graceful shutdown:", error);
       }
     }
     if (this.process) {
@@ -1308,7 +1310,7 @@ class AcpBackend {
       await new Promise((resolve) => {
         const timeout = setTimeout(() => {
           if (this.process) {
-            logger.debug("[AcpBackend] Force killing process");
+            api.logger.debug("[AcpBackend] Force killing process");
             this.process.kill("SIGKILL");
           }
           resolve();
@@ -1338,13 +1340,13 @@ class AcpBackend {
 }
 
 function createGeminiBackend(options) {
-  const localConfig = readGeminiLocalConfig();
-  let apiKey = options.cloudToken || localConfig.token || process.env[GEMINI_API_KEY_ENV] || process.env[GOOGLE_API_KEY_ENV] || options.apiKey;
+  const localConfig = config.readGeminiLocalConfig();
+  let apiKey = options.cloudToken || localConfig.token || process.env[constants.GEMINI_API_KEY_ENV] || process.env[constants.GOOGLE_API_KEY_ENV] || options.apiKey;
   if (!apiKey) {
-    logger.warn(`[Gemini] No API key found. Run 'happy connect gemini' to authenticate via Google OAuth, or set ${GEMINI_API_KEY_ENV} environment variable.`);
+    api.logger.warn(`[Gemini] No API key found. Run 'happy connect gemini' to authenticate via Google OAuth, or set ${constants.GEMINI_API_KEY_ENV} environment variable.`);
   }
   const geminiCommand = "gemini";
-  const model = determineGeminiModel(options.model, localConfig);
+  const model = config.determineGeminiModel(options.model, localConfig);
   const geminiArgs = ["--experimental-acp"];
   let googleCloudProject = null;
   if (localConfig.googleCloudProject) {
@@ -1352,9 +1354,9 @@ function createGeminiBackend(options) {
     const currentEmail = options.currentUserEmail;
     if (!storedEmail || storedEmail === currentEmail) {
       googleCloudProject = localConfig.googleCloudProject;
-      logger.debug(`[Gemini] Using Google Cloud Project: ${googleCloudProject}${storedEmail ? ` (for ${storedEmail})` : " (global)"}`);
+      api.logger.debug(`[Gemini] Using Google Cloud Project: ${googleCloudProject}${storedEmail ? ` (for ${storedEmail})` : " (global)"}`);
     } else {
-      logger.debug(`[Gemini] Skipping stored Google Cloud Project (stored for ${storedEmail}, current user is ${currentEmail || "unknown"})`);
+      api.logger.debug(`[Gemini] Skipping stored Google Cloud Project (stored for ${storedEmail}, current user is ${currentEmail || "unknown"})`);
     }
   }
   const backendOptions = {
@@ -1364,9 +1366,9 @@ function createGeminiBackend(options) {
     args: geminiArgs,
     env: {
       ...options.env,
-      ...apiKey ? { [GEMINI_API_KEY_ENV]: apiKey, [GOOGLE_API_KEY_ENV]: apiKey } : {},
+      ...apiKey ? { [constants.GEMINI_API_KEY_ENV]: apiKey, [constants.GOOGLE_API_KEY_ENV]: apiKey } : {},
       // Pass model via env var - gemini CLI reads GEMINI_MODEL automatically
-      [GEMINI_MODEL_ENV]: model,
+      [constants.GEMINI_MODEL_ENV]: model,
       // Pass Google Cloud Project for Workspace accounts
       ...googleCloudProject ? {
         GOOGLE_CLOUD_PROJECT: googleCloudProject,
@@ -1385,8 +1387,8 @@ function createGeminiBackend(options) {
       return lower.includes("change_title") || lower.includes("change title") || lower.includes("set title") || lower.includes("mcp__happy__change_title");
     }
   };
-  const modelSource = getGeminiModelSource(options.model, localConfig);
-  logger.debug("[Gemini] Creating ACP SDK backend with options:", {
+  const modelSource = config.getGeminiModelSource(options.model, localConfig);
+  api.logger.debug("[Gemini] Creating ACP SDK backend with options:", {
     cwd: backendOptions.cwd,
     command: backendOptions.command,
     args: backendOptions.args,
@@ -1403,20 +1405,20 @@ function createGeminiBackend(options) {
 }
 
 const GeminiDisplay = ({ messageBuffer, logPath, currentModel, onExit }) => {
-  const [messages, setMessages] = useState([]);
-  const [confirmationMode, setConfirmationMode] = useState(false);
-  const [actionInProgress, setActionInProgress] = useState(false);
-  const [model, setModel] = useState(currentModel);
-  const confirmationTimeoutRef = useRef(null);
-  const { stdout } = useStdout();
+  const [messages, setMessages] = React.useState([]);
+  const [confirmationMode, setConfirmationMode] = React.useState(false);
+  const [actionInProgress, setActionInProgress] = React.useState(false);
+  const [model, setModel] = React.useState(currentModel);
+  const confirmationTimeoutRef = React.useRef(null);
+  const { stdout } = ink.useStdout();
   const terminalWidth = stdout.columns || 80;
   const terminalHeight = stdout.rows || 24;
-  useEffect(() => {
+  React.useEffect(() => {
     if (currentModel !== void 0 && currentModel !== model) {
       setModel(currentModel);
     }
   }, [currentModel]);
-  useEffect(() => {
+  React.useEffect(() => {
     setMessages(messageBuffer.getMessages());
     const unsubscribe = messageBuffer.onUpdate((newMessages) => {
       setMessages(newMessages);
@@ -1443,14 +1445,14 @@ const GeminiDisplay = ({ messageBuffer, logPath, currentModel, onExit }) => {
       }
     };
   }, [messageBuffer]);
-  const resetConfirmation = useCallback(() => {
+  const resetConfirmation = React.useCallback(() => {
     setConfirmationMode(false);
     if (confirmationTimeoutRef.current) {
       clearTimeout(confirmationTimeoutRef.current);
       confirmationTimeoutRef.current = null;
     }
   }, []);
-  const setConfirmationWithTimeout = useCallback(() => {
+  const setConfirmationWithTimeout = React.useCallback(() => {
     setConfirmationMode(true);
     if (confirmationTimeoutRef.current) {
       clearTimeout(confirmationTimeoutRef.current);
@@ -1459,7 +1461,7 @@ const GeminiDisplay = ({ messageBuffer, logPath, currentModel, onExit }) => {
       resetConfirmation();
     }, 15e3);
   }, [resetConfirmation]);
-  useInput(useCallback(async (input, key) => {
+  ink.useInput(React.useCallback(async (input, key) => {
     if (actionInProgress) return;
     if (key.ctrl && input === "c") {
       if (confirmationMode) {
@@ -1506,8 +1508,8 @@ const GeminiDisplay = ({ messageBuffer, logPath, currentModel, onExit }) => {
       return chunks.join("\n");
     }).join("\n");
   };
-  return /* @__PURE__ */ React.createElement(Box, { flexDirection: "column", width: terminalWidth, height: terminalHeight }, /* @__PURE__ */ React.createElement(
-    Box,
+  return /* @__PURE__ */ React.createElement(ink.Box, { flexDirection: "column", width: terminalWidth, height: terminalHeight }, /* @__PURE__ */ React.createElement(
+    ink.Box,
     {
       flexDirection: "column",
       width: terminalWidth,
@@ -1517,8 +1519,8 @@ const GeminiDisplay = ({ messageBuffer, logPath, currentModel, onExit }) => {
       paddingX: 1,
       overflow: "hidden"
     },
-    /* @__PURE__ */ React.createElement(Box, { flexDirection: "column", marginBottom: 1 }, /* @__PURE__ */ React.createElement(Text, { color: "cyan", bold: true }, "\u2728 Gemini Agent Messages"), /* @__PURE__ */ React.createElement(Text, { color: "gray", dimColor: true }, "\u2500".repeat(Math.min(terminalWidth - 4, 60)))),
-    /* @__PURE__ */ React.createElement(Box, { flexDirection: "column", height: terminalHeight - 10, overflow: "hidden" }, messages.length === 0 ? /* @__PURE__ */ React.createElement(Text, { color: "gray", dimColor: true }, "Waiting for messages...") : messages.filter((msg) => {
+    /* @__PURE__ */ React.createElement(ink.Box, { flexDirection: "column", marginBottom: 1 }, /* @__PURE__ */ React.createElement(ink.Text, { color: "cyan", bold: true }, "\u2728 Gemini Agent Messages"), /* @__PURE__ */ React.createElement(ink.Text, { color: "gray", dimColor: true }, "\u2500".repeat(Math.min(terminalWidth - 4, 60)))),
+    /* @__PURE__ */ React.createElement(ink.Box, { flexDirection: "column", height: terminalHeight - 10, overflow: "hidden" }, messages.length === 0 ? /* @__PURE__ */ React.createElement(ink.Text, { color: "gray", dimColor: true }, "Waiting for messages...") : messages.filter((msg) => {
       if (msg.type === "system" && !msg.content.trim()) {
         return false;
       }
@@ -1529,9 +1531,9 @@ const GeminiDisplay = ({ messageBuffer, logPath, currentModel, onExit }) => {
         return false;
       }
       return true;
-    }).slice(-Math.max(1, terminalHeight - 10)).map((msg, index, array) => /* @__PURE__ */ React.createElement(Box, { key: msg.id, flexDirection: "column", marginBottom: index < array.length - 1 ? 1 : 0 }, /* @__PURE__ */ React.createElement(Text, { color: getMessageColor(msg.type), dimColor: true }, formatMessage(msg)))))
+    }).slice(-Math.max(1, terminalHeight - 10)).map((msg, index, array) => /* @__PURE__ */ React.createElement(ink.Box, { key: msg.id, flexDirection: "column", marginBottom: index < array.length - 1 ? 1 : 0 }, /* @__PURE__ */ React.createElement(ink.Text, { color: getMessageColor(msg.type), dimColor: true }, formatMessage(msg)))))
   ), /* @__PURE__ */ React.createElement(
-    Box,
+    ink.Box,
     {
       width: terminalWidth,
       borderStyle: "round",
@@ -1541,11 +1543,11 @@ const GeminiDisplay = ({ messageBuffer, logPath, currentModel, onExit }) => {
       alignItems: "center",
       flexDirection: "column"
     },
-    /* @__PURE__ */ React.createElement(Box, { flexDirection: "column", alignItems: "center" }, actionInProgress ? /* @__PURE__ */ React.createElement(Text, { color: "gray", bold: true }, "Exiting agent...") : confirmationMode ? /* @__PURE__ */ React.createElement(Text, { color: "red", bold: true }, "\u26A0\uFE0F  Press Ctrl-C again to exit the agent") : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(Text, { color: "cyan", bold: true }, "\u2728 Gemini Agent Running \u2022 Ctrl-C to exit"), model && /* @__PURE__ */ React.createElement(Text, { color: "gray", dimColor: true }, "Model: ", model)), process.env.DEBUG && logPath && /* @__PURE__ */ React.createElement(Text, { color: "gray", dimColor: true }, "Debug logs: ", logPath))
+    /* @__PURE__ */ React.createElement(ink.Box, { flexDirection: "column", alignItems: "center" }, actionInProgress ? /* @__PURE__ */ React.createElement(ink.Text, { color: "gray", bold: true }, "Exiting agent...") : confirmationMode ? /* @__PURE__ */ React.createElement(ink.Text, { color: "red", bold: true }, "\u26A0\uFE0F  Press Ctrl-C again to exit the agent") : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(ink.Text, { color: "cyan", bold: true }, "\u2728 Gemini Agent Running \u2022 Ctrl-C to exit"), model && /* @__PURE__ */ React.createElement(ink.Text, { color: "gray", dimColor: true }, "Model: ", model)), process.env.DEBUG && logPath && /* @__PURE__ */ React.createElement(ink.Text, { color: "gray", dimColor: true }, "Debug logs: ", logPath))
   ));
 };
 
-class GeminiPermissionHandler extends BasePermissionHandler {
+class GeminiPermissionHandler extends BaseReasoningProcessor.BasePermissionHandler {
   currentPermissionMode = "default";
   constructor(session) {
     super(session);
@@ -1565,7 +1567,7 @@ class GeminiPermissionHandler extends BasePermissionHandler {
    */
   setPermissionMode(mode) {
     this.currentPermissionMode = mode;
-    logger.debug(`${this.getLogPrefix()} Permission mode set to: ${mode}`);
+    api.logger.debug(`${this.getLogPrefix()} Permission mode set to: ${mode}`);
   }
   /**
    * Check if a tool should be auto-approved based on permission mode
@@ -1602,7 +1604,7 @@ class GeminiPermissionHandler extends BasePermissionHandler {
    */
   async handleToolCall(toolCallId, toolName, input) {
     if (this.shouldAutoApprove(toolName, toolCallId, input)) {
-      logger.debug(`${this.getLogPrefix()} Auto-approving tool ${toolName} (${toolCallId}) in ${this.currentPermissionMode} mode`);
+      api.logger.debug(`${this.getLogPrefix()} Auto-approving tool ${toolName} (${toolCallId}) in ${this.currentPermissionMode} mode`);
       this.session.updateAgentState((currentState) => ({
         ...currentState,
         completedRequests: {
@@ -1629,12 +1631,12 @@ class GeminiPermissionHandler extends BasePermissionHandler {
         input
       });
       this.addPendingRequestToState(toolCallId, toolName, input);
-      logger.debug(`${this.getLogPrefix()} Permission request sent for tool: ${toolName} (${toolCallId}) in ${this.currentPermissionMode} mode`);
+      api.logger.debug(`${this.getLogPrefix()} Permission request sent for tool: ${toolName} (${toolCallId}) in ${this.currentPermissionMode} mode`);
     });
   }
 }
 
-class GeminiReasoningProcessor extends BaseReasoningProcessor {
+class GeminiReasoningProcessor extends BaseReasoningProcessor.BaseReasoningProcessor {
   getToolName() {
     return "GeminiReasoning";
   }
@@ -1669,7 +1671,7 @@ class GeminiDiffProcessor {
    * Process an fs-edit event and check if it contains diff information
    */
   processFsEdit(path, description, diff) {
-    logger.debug(`[GeminiDiffProcessor] Processing fs-edit for path: ${path}`);
+    api.logger.debug(`[GeminiDiffProcessor] Processing fs-edit for path: ${path}`);
     if (diff) {
       this.processDiff(path, diff, description);
     } else {
@@ -1685,7 +1687,7 @@ class GeminiDiffProcessor {
       const diff = result.diff || result.unified_diff || result.patch;
       const path = result.path || result.file;
       if (diff && path) {
-        logger.debug(`[GeminiDiffProcessor] Found diff in tool result: ${toolName} (${callId})`);
+        api.logger.debug(`[GeminiDiffProcessor] Found diff in tool result: ${toolName} (${callId})`);
         this.processDiff(path, diff, result.description);
       } else if (result.changes && typeof result.changes === "object") {
         for (const [filePath, change] of Object.entries(result.changes)) {
@@ -1701,8 +1703,8 @@ class GeminiDiffProcessor {
   processDiff(path, unifiedDiff, description) {
     const previousDiff = this.previousDiffs.get(path);
     if (previousDiff !== unifiedDiff) {
-      logger.debug(`[GeminiDiffProcessor] Unified diff changed for ${path}, sending GeminiDiff tool call`);
-      const callId = randomUUID();
+      api.logger.debug(`[GeminiDiffProcessor] Unified diff changed for ${path}, sending GeminiDiff tool call`);
+      const callId = node_crypto.randomUUID();
       const toolCall = {
         type: "tool-call",
         name: "GeminiDiff",
@@ -1712,7 +1714,7 @@ class GeminiDiffProcessor {
           path,
           description
         },
-        id: randomUUID()
+        id: node_crypto.randomUUID()
       };
       this.onMessage?.(toolCall);
       const toolResult = {
@@ -1721,18 +1723,18 @@ class GeminiDiffProcessor {
         output: {
           status: "completed"
         },
-        id: randomUUID()
+        id: node_crypto.randomUUID()
       };
       this.onMessage?.(toolResult);
     }
     this.previousDiffs.set(path, unifiedDiff);
-    logger.debug(`[GeminiDiffProcessor] Updated stored diff for ${path}`);
+    api.logger.debug(`[GeminiDiffProcessor] Updated stored diff for ${path}`);
   }
   /**
    * Reset the processor state (called on task_complete or turn_aborted)
    */
   reset() {
-    logger.debug("[GeminiDiffProcessor] Resetting diff state");
+    api.logger.debug("[GeminiDiffProcessor] Resetting diff state");
     this.previousDiffs.clear();
   }
   /**
@@ -1825,7 +1827,7 @@ class ConversationHistory {
     if (!content.trim()) return;
     const trimmedContent = content.trim();
     if (this.isDuplicate("user", trimmedContent)) {
-      logger.debug(`[ConversationHistory] Skipping duplicate user message (${trimmedContent.length} chars)`);
+      api.logger.debug(`[ConversationHistory] Skipping duplicate user message (${trimmedContent.length} chars)`);
       return;
     }
     this.messages.push({
@@ -1834,7 +1836,7 @@ class ConversationHistory {
       timestamp: Date.now()
     });
     this.trimHistory();
-    logger.debug(`[ConversationHistory] Added user message (${trimmedContent.length} chars), total: ${this.messages.length}`);
+    api.logger.debug(`[ConversationHistory] Added user message (${trimmedContent.length} chars), total: ${this.messages.length}`);
   }
   /**
    * Add an assistant response to history
@@ -1844,7 +1846,7 @@ class ConversationHistory {
     if (!content.trim()) return;
     const trimmedContent = content.trim();
     if (this.isDuplicate("assistant", trimmedContent)) {
-      logger.debug(`[ConversationHistory] Skipping duplicate assistant message (${trimmedContent.length} chars)`);
+      api.logger.debug(`[ConversationHistory] Skipping duplicate assistant message (${trimmedContent.length} chars)`);
       return;
     }
     this.messages.push({
@@ -1854,7 +1856,7 @@ class ConversationHistory {
       model: this.currentModel
     });
     this.trimHistory();
-    logger.debug(`[ConversationHistory] Added assistant message (${trimmedContent.length} chars), total: ${this.messages.length}`);
+    api.logger.debug(`[ConversationHistory] Added assistant message (${trimmedContent.length} chars), total: ${this.messages.length}`);
   }
   /**
    * Get the number of messages in history
@@ -1873,7 +1875,7 @@ class ConversationHistory {
    */
   clear() {
     this.messages = [];
-    logger.debug("[ConversationHistory] History cleared");
+    api.logger.debug("[ConversationHistory] History cleared");
   }
   /**
    * Get formatted context for injecting into a new session.
@@ -1926,27 +1928,27 @@ ${formattedMessages}
 }
 
 async function runGemini(opts) {
-  const sessionTag = randomUUID();
-  connectionState.setBackend("Gemini");
-  const api = await ApiClient.create(opts.credentials);
-  const settings = await readSettings();
+  const sessionTag = node_crypto.randomUUID();
+  api.connectionState.setBackend("Gemini");
+  const api$1 = await api.ApiClient.create(opts.credentials);
+  const settings = await api.readSettings();
   const machineId = settings?.machineId;
   if (!machineId) {
     console.error(`[START] No machine ID found in settings, which is unexpected since authAndSetupMachineIfNeeded should have created it. Please report this issue on https://github.com/slopus/happy-cli/issues`);
     process.exit(1);
   }
-  logger.debug(`Using machineId: ${machineId}`);
-  await api.getOrCreateMachine({
+  api.logger.debug(`Using machineId: ${machineId}`);
+  await api$1.getOrCreateMachine({
     machineId,
-    metadata: initialMachineMetadata
+    metadata: api.initialMachineMetadata
   });
   let cloudToken = void 0;
   let currentUserEmail = void 0;
   try {
-    const vendorToken = await api.getVendorToken("gemini");
+    const vendorToken = await api$1.getVendorToken("gemini");
     if (vendorToken?.oauth?.access_token) {
       cloudToken = vendorToken.oauth.access_token;
-      logger.debug("[Gemini] Using OAuth token from Happy cloud");
+      api.logger.debug("[Gemini] Using OAuth token from Happy cloud");
       if (vendorToken.oauth.id_token) {
         try {
           const parts = vendorToken.oauth.id_token.split(".");
@@ -1954,30 +1956,30 @@ async function runGemini(opts) {
             const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString("utf8"));
             if (payload.email) {
               currentUserEmail = payload.email;
-              logger.debug(`[Gemini] Current user email: ${currentUserEmail}`);
+              api.logger.debug(`[Gemini] Current user email: ${currentUserEmail}`);
             }
           }
         } catch {
-          logger.debug("[Gemini] Failed to decode id_token for email");
+          api.logger.debug("[Gemini] Failed to decode id_token for email");
         }
       }
     }
   } catch (error) {
-    logger.debug("[Gemini] Failed to fetch cloud token:", error);
+    api.logger.debug("[Gemini] Failed to fetch cloud token:", error);
   }
-  const { state, metadata } = createSessionMetadata({
+  const { state, metadata } = setupOfflineReconnection.createSessionMetadata({
     flavor: "gemini",
     machineId,
     startedBy: opts.startedBy
   });
-  const response = await api.getOrCreateSession({ tag: sessionTag, metadata, state });
+  const response = await api$1.getOrCreateSession({ tag: sessionTag, metadata, state });
   let session;
   let permissionHandler;
   let isProcessingMessage = false;
   let pendingSessionSwap = null;
   const applyPendingSessionSwap = () => {
     if (pendingSessionSwap) {
-      logger.debug("[gemini] Applying pending session swap");
+      api.logger.debug("[gemini] Applying pending session swap");
       session = pendingSessionSwap;
       if (permissionHandler) {
         permissionHandler.updateSession(pendingSessionSwap);
@@ -1985,15 +1987,15 @@ async function runGemini(opts) {
       pendingSessionSwap = null;
     }
   };
-  const { session: initialSession, reconnectionHandle } = setupOfflineReconnection({
-    api,
+  const { session: initialSession, reconnectionHandle } = setupOfflineReconnection.setupOfflineReconnection({
+    api: api$1,
     sessionTag,
     metadata,
     state,
     response,
     onSessionSwap: (newSession) => {
       if (isProcessingMessage) {
-        logger.debug("[gemini] Session swap requested during message processing - queueing");
+        api.logger.debug("[gemini] Session swap requested during message processing - queueing");
         pendingSessionSwap = newSession;
       } else {
         session = newSession;
@@ -2006,18 +2008,18 @@ async function runGemini(opts) {
   session = initialSession;
   if (response) {
     try {
-      logger.debug(`[START] Reporting session ${response.id} to daemon`);
-      const result = await notifyDaemonSessionStarted(response.id, metadata);
+      api.logger.debug(`[START] Reporting session ${response.id} to daemon`);
+      const result = await api.notifyDaemonSessionStarted(response.id, metadata);
       if (result.error) {
-        logger.debug(`[START] Failed to report to daemon (may not be running):`, result.error);
+        api.logger.debug(`[START] Failed to report to daemon (may not be running):`, result.error);
       } else {
-        logger.debug(`[START] Reported session ${response.id} to daemon`);
+        api.logger.debug(`[START] Reported session ${response.id} to daemon`);
       }
     } catch (error) {
-      logger.debug("[START] Failed to report to daemon (may not be running):", error);
+      api.logger.debug("[START] Failed to report to daemon (may not be running):", error);
     }
   }
-  const messageQueue = new MessageQueue2((mode) => hashObject({
+  const messageQueue = new api.MessageQueue2((mode) => api.hashObject({
     permissionMode: mode.permissionMode,
     model: mode.model
   }));
@@ -2032,12 +2034,12 @@ async function runGemini(opts) {
         messagePermissionMode = message.meta.permissionMode;
         currentPermissionMode = messagePermissionMode;
         updatePermissionMode(messagePermissionMode);
-        logger.debug(`[Gemini] Permission mode updated from user message to: ${currentPermissionMode}`);
+        api.logger.debug(`[Gemini] Permission mode updated from user message to: ${currentPermissionMode}`);
       } else {
-        logger.debug(`[Gemini] Invalid permission mode received: ${message.meta.permissionMode}`);
+        api.logger.debug(`[Gemini] Invalid permission mode received: ${message.meta.permissionMode}`);
       }
     } else {
-      logger.debug(`[Gemini] User message received with no permission mode override, using current: ${currentPermissionMode ?? "default (effective)"}`);
+      api.logger.debug(`[Gemini] User message received with no permission mode override, using current: ${currentPermissionMode ?? "default (effective)"}`);
     }
     if (currentPermissionMode === void 0) {
       currentPermissionMode = "default";
@@ -2055,14 +2057,14 @@ async function runGemini(opts) {
         if (previousModel !== messageModel) {
           updateDisplayedModel(messageModel, true);
           messageBuffer.addMessage(`Model changed to: ${messageModel}`, "system");
-          logger.debug(`[Gemini] Model changed from ${previousModel} to ${messageModel}`);
+          api.logger.debug(`[Gemini] Model changed from ${previousModel} to ${messageModel}`);
         }
       }
     }
     const originalUserMessage = message.content.text;
     let fullPrompt = originalUserMessage;
     if (isFirstMessage && message.meta?.appendSystemPrompt) {
-      fullPrompt = message.meta.appendSystemPrompt + "\n\n" + originalUserMessage + "\n\n" + CHANGE_TITLE_INSTRUCTION;
+      fullPrompt = message.meta.appendSystemPrompt + "\n\n" + originalUserMessage + "\n\n" + constants.CHANGE_TITLE_INSTRUCTION;
       isFirstMessage = false;
     }
     const mode = {
@@ -2083,13 +2085,13 @@ async function runGemini(opts) {
   const sendReady = () => {
     session.sendSessionEvent({ type: "ready" });
     try {
-      api.push().sendToAllDevices(
+      api$1.push().sendToAllDevices(
         "It's ready!",
         "Gemini is waiting for your command",
         { sessionId: session.sessionId }
       );
     } catch (pushError) {
-      logger.debug("[Gemini] Failed to send ready push", pushError);
+      api.logger.debug("[Gemini] Failed to send ready push", pushError);
     }
   };
   const emitReadyIfIdle = () => {
@@ -2114,10 +2116,10 @@ async function runGemini(opts) {
   let acpSessionId = null;
   let wasSessionCreated = false;
   async function handleAbort() {
-    logger.debug("[Gemini] Abort requested - stopping current task");
+    api.logger.debug("[Gemini] Abort requested - stopping current task");
     session.sendAgentMessage("gemini", {
       type: "turn_aborted",
-      id: randomUUID()
+      id: node_crypto.randomUUID()
     });
     reasoningProcessor.abort();
     diffProcessor.reset();
@@ -2127,17 +2129,17 @@ async function runGemini(opts) {
       if (geminiBackend && acpSessionId) {
         await geminiBackend.cancel(acpSessionId);
       }
-      logger.debug("[Gemini] Abort completed - session remains active");
+      api.logger.debug("[Gemini] Abort completed - session remains active");
     } catch (error) {
-      logger.debug("[Gemini] Error during abort:", error);
+      api.logger.debug("[Gemini] Error during abort:", error);
     } finally {
       abortController = new AbortController();
     }
   }
   const handleKillSession = async () => {
-    logger.debug("[Gemini] Kill session requested - terminating process");
+    api.logger.debug("[Gemini] Kill session requested - terminating process");
     await handleAbort();
-    logger.debug("[Gemini] Abort completed, proceeding with termination");
+    api.logger.debug("[Gemini] Abort completed, proceeding with termination");
     try {
       if (session) {
         session.updateMetadata((currentMetadata) => ({
@@ -2151,42 +2153,42 @@ async function runGemini(opts) {
         await session.flush();
         await session.close();
       }
-      stopCaffeinate();
+      api.stopCaffeinate();
       happyServer.stop();
       if (geminiBackend) {
         await geminiBackend.dispose();
       }
-      logger.debug("[Gemini] Session termination complete, exiting");
+      api.logger.debug("[Gemini] Session termination complete, exiting");
       process.exit(0);
     } catch (error) {
-      logger.debug("[Gemini] Error during session termination:", error);
+      api.logger.debug("[Gemini] Error during session termination:", error);
       process.exit(1);
     }
   };
   session.rpcHandlerManager.registerHandler("abort", handleAbort);
-  registerKillSessionHandler(session.rpcHandlerManager, handleKillSession);
-  const messageBuffer = new MessageBuffer();
+  api.registerKillSessionHandler(session.rpcHandlerManager, handleKillSession);
+  const messageBuffer = new index.MessageBuffer();
   const hasTTY = process.stdout.isTTY && process.stdin.isTTY;
   let inkInstance = null;
-  let displayedModel = getInitialGeminiModel();
-  const localConfig = readGeminiLocalConfig();
-  logger.debug(`[gemini] Initial model setup: env[GEMINI_MODEL_ENV]=${process.env[GEMINI_MODEL_ENV] || "not set"}, localConfig=${localConfig.model || "not set"}, displayedModel=${displayedModel}`);
+  let displayedModel = config.getInitialGeminiModel();
+  const localConfig = config.readGeminiLocalConfig();
+  api.logger.debug(`[gemini] Initial model setup: env[GEMINI_MODEL_ENV]=${process.env[constants.GEMINI_MODEL_ENV] || "not set"}, localConfig=${localConfig.model || "not set"}, displayedModel=${displayedModel}`);
   const updateDisplayedModel = (model, saveToConfig = false) => {
     if (model === void 0) {
-      logger.debug(`[gemini] updateDisplayedModel called with undefined, skipping update`);
+      api.logger.debug(`[gemini] updateDisplayedModel called with undefined, skipping update`);
       return;
     }
     const oldModel = displayedModel;
     displayedModel = model;
-    logger.debug(`[gemini] updateDisplayedModel called: oldModel=${oldModel}, newModel=${model}, saveToConfig=${saveToConfig}`);
+    api.logger.debug(`[gemini] updateDisplayedModel called: oldModel=${oldModel}, newModel=${model}, saveToConfig=${saveToConfig}`);
     if (saveToConfig) {
-      saveGeminiModelToConfig(model);
+      config.saveGeminiModelToConfig(model);
     }
     if (hasTTY && oldModel !== model) {
-      logger.debug(`[gemini] Adding model update message to buffer: [MODEL:${model}]`);
+      api.logger.debug(`[gemini] Adding model update message to buffer: [MODEL:${model}]`);
       messageBuffer.addMessage(`[MODEL:${model}]`, "system");
     } else if (hasTTY) {
-      logger.debug(`[gemini] Model unchanged, skipping update message`);
+      api.logger.debug(`[gemini] Model unchanged, skipping update message`);
     }
   };
   if (hasTTY) {
@@ -2195,21 +2197,21 @@ async function runGemini(opts) {
       const currentModelValue = displayedModel || "gemini-2.5-pro";
       return React.createElement(GeminiDisplay, {
         messageBuffer,
-        logPath: process.env.DEBUG ? logger.getLogPath() : void 0,
+        logPath: process.env.DEBUG ? api.logger.getLogPath() : void 0,
         currentModel: currentModelValue,
         onExit: async () => {
-          logger.debug("[gemini]: Exiting agent via Ctrl-C");
+          api.logger.debug("[gemini]: Exiting agent via Ctrl-C");
           shouldExit = true;
           await handleAbort();
         }
       });
     };
-    inkInstance = render(React.createElement(DisplayComponent), {
+    inkInstance = ink.render(React.createElement(DisplayComponent), {
       exitOnCtrlC: false,
       patchConsole: false
     });
     const initialModelName = displayedModel || "gemini-2.5-pro";
-    logger.debug(`[gemini] Sending initial model to UI: ${initialModelName}`);
+    api.logger.debug(`[gemini] Sending initial model to UI: ${initialModelName}`);
     messageBuffer.addMessage(`[MODEL:${initialModelName}]`, "system");
   }
   if (hasTTY) {
@@ -2219,8 +2221,8 @@ async function runGemini(opts) {
     }
     process.stdin.setEncoding("utf8");
   }
-  const happyServer = await startHappyServer(session);
-  const bridgeCommand = join(projectPath(), "bin", "happy-mcp.mjs");
+  const happyServer = await api.startHappyServer(session);
+  const bridgeCommand = node_path.join(api.projectPath(), "bin", "happy-mcp.mjs");
   const mcpServers = {
     happy: {
       command: bridgeCommand,
@@ -2252,22 +2254,22 @@ async function runGemini(opts) {
               messageBuffer.removeLastMessage("system");
               messageBuffer.addMessage(msg.textDelta, "assistant");
               isResponseInProgress = true;
-              logger.debug(`[gemini] Started new response, first chunk length: ${msg.textDelta.length}`);
+              api.logger.debug(`[gemini] Started new response, first chunk length: ${msg.textDelta.length}`);
             } else {
               messageBuffer.updateLastMessage(msg.textDelta, "assistant");
-              logger.debug(`[gemini] Updated response, chunk length: ${msg.textDelta.length}, total accumulated: ${accumulatedResponse.length + msg.textDelta.length}`);
+              api.logger.debug(`[gemini] Updated response, chunk length: ${msg.textDelta.length}, total accumulated: ${accumulatedResponse.length + msg.textDelta.length}`);
             }
             accumulatedResponse += msg.textDelta;
           }
           break;
         case "status":
           const statusDetail = msg.detail ? typeof msg.detail === "object" ? JSON.stringify(msg.detail) : String(msg.detail) : "";
-          logger.debug(`[gemini] Status changed: ${msg.status}${statusDetail ? ` - ${statusDetail}` : ""}`);
+          api.logger.debug(`[gemini] Status changed: ${msg.status}${statusDetail ? ` - ${statusDetail}` : ""}`);
           if (msg.status === "error") {
-            logger.debug(`[gemini] \u26A0\uFE0F Error status received: ${statusDetail || "Unknown error"}`);
+            api.logger.debug(`[gemini] \u26A0\uFE0F Error status received: ${statusDetail || "Unknown error"}`);
             session.sendAgentMessage("gemini", {
               type: "turn_aborted",
-              id: randomUUID()
+              id: node_crypto.randomUUID()
             });
           }
           if (msg.status === "running") {
@@ -2276,7 +2278,7 @@ async function runGemini(opts) {
             if (!taskStartedSent) {
               session.sendAgentMessage("gemini", {
                 type: "task_started",
-                id: randomUUID()
+                id: node_crypto.randomUUID()
               });
               taskStartedSent = true;
             }
@@ -2314,9 +2316,9 @@ Guide: https://goo.gle/gemini-cli-auth-docs#workspace-gca`;
           hadToolCallInTurn = true;
           const toolArgs = msg.args ? JSON.stringify(msg.args).substring(0, 100) : "";
           const isInvestigationTool = msg.toolName === "codebase_investigator" || typeof msg.toolName === "string" && msg.toolName.includes("investigator");
-          logger.debug(`[gemini] \u{1F527} Tool call received: ${msg.toolName} (${msg.callId})${isInvestigationTool ? " [INVESTIGATION]" : ""}`);
+          api.logger.debug(`[gemini] \u{1F527} Tool call received: ${msg.toolName} (${msg.callId})${isInvestigationTool ? " [INVESTIGATION]" : ""}`);
           if (isInvestigationTool && msg.args && typeof msg.args === "object" && "objective" in msg.args) {
-            logger.debug(`[gemini] \u{1F50D} Investigation objective: ${String(msg.args.objective).substring(0, 150)}...`);
+            api.logger.debug(`[gemini] \u{1F50D} Investigation objective: ${String(msg.args.objective).substring(0, 150)}...`);
           }
           messageBuffer.addMessage(`Executing: ${msg.toolName}${toolArgs ? ` ${toolArgs}${toolArgs.length >= 100 ? "..." : ""}` : ""}`, "tool");
           session.sendAgentMessage("gemini", {
@@ -2324,29 +2326,29 @@ Guide: https://goo.gle/gemini-cli-auth-docs#workspace-gca`;
             name: msg.toolName,
             callId: msg.callId,
             input: msg.args,
-            id: randomUUID()
+            id: node_crypto.randomUUID()
           });
           break;
         case "tool-result":
           if (msg.toolName === "change_title" || msg.callId?.includes("change_title") || msg.toolName === "happy__change_title") {
             changeTitleCompleted = true;
-            logger.debug("[gemini] change_title completed");
+            api.logger.debug("[gemini] change_title completed");
           }
           const isError = msg.result && typeof msg.result === "object" && "error" in msg.result;
           const resultText = typeof msg.result === "string" ? msg.result.substring(0, 200) : JSON.stringify(msg.result).substring(0, 200);
           const truncatedResult = resultText + (typeof msg.result === "string" && msg.result.length > 200 ? "..." : "");
           const resultSize = typeof msg.result === "string" ? msg.result.length : JSON.stringify(msg.result).length;
-          logger.debug(`[gemini] ${isError ? "\u274C" : "\u2705"} Tool result received: ${msg.toolName} (${msg.callId}) - Size: ${resultSize} bytes${isError ? " [ERROR]" : ""}`);
+          api.logger.debug(`[gemini] ${isError ? "\u274C" : "\u2705"} Tool result received: ${msg.toolName} (${msg.callId}) - Size: ${resultSize} bytes${isError ? " [ERROR]" : ""}`);
           if (!isError) {
             diffProcessor.processToolResult(msg.toolName, msg.result, msg.callId);
           }
           if (isError) {
             const errorMsg = msg.result.error || "Tool call failed";
-            logger.debug(`[gemini] \u274C Tool call error: ${errorMsg.substring(0, 300)}`);
+            api.logger.debug(`[gemini] \u274C Tool call error: ${errorMsg.substring(0, 300)}`);
             messageBuffer.addMessage(`Error: ${errorMsg}`, "status");
           } else {
             if (resultSize > 1e3) {
-              logger.debug(`[gemini] \u2705 Large tool result (${resultSize} bytes) - first 200 chars: ${truncatedResult}`);
+              api.logger.debug(`[gemini] \u2705 Large tool result (${resultSize} bytes) - first 200 chars: ${truncatedResult}`);
             }
             messageBuffer.addMessage(`Result: ${truncatedResult}`, "result");
           }
@@ -2354,7 +2356,7 @@ Guide: https://goo.gle/gemini-cli-auth-docs#workspace-gca`;
             type: "tool-result",
             callId: msg.callId,
             output: msg.result,
-            id: randomUUID()
+            id: node_crypto.randomUUID()
           });
           break;
         case "fs-edit":
@@ -2365,7 +2367,7 @@ Guide: https://goo.gle/gemini-cli-auth-docs#workspace-gca`;
             description: msg.description,
             diff: msg.diff,
             filePath: msg.path || "unknown",
-            id: randomUUID()
+            id: node_crypto.randomUUID()
           });
           break;
         default:
@@ -2373,7 +2375,7 @@ Guide: https://goo.gle/gemini-cli-auth-docs#workspace-gca`;
             session.sendAgentMessage("gemini", {
               type: "token_count",
               ...msg,
-              id: randomUUID()
+              id: node_crypto.randomUUID()
             });
           }
           break;
@@ -2382,7 +2384,7 @@ Guide: https://goo.gle/gemini-cli-auth-docs#workspace-gca`;
           session.sendAgentMessage("gemini", {
             type: "terminal-output",
             data: msg.data,
-            callId: msg.callId || randomUUID()
+            callId: msg.callId || node_crypto.randomUUID()
           });
           break;
         case "permission-request":
@@ -2397,9 +2399,9 @@ Guide: https://goo.gle/gemini-cli-auth-docs#workspace-gca`;
           break;
         case "exec-approval-request":
           const execApprovalMsg = msg;
-          const callId = execApprovalMsg.call_id || execApprovalMsg.callId || randomUUID();
+          const callId = execApprovalMsg.call_id || execApprovalMsg.callId || node_crypto.randomUUID();
           const { call_id, type, ...inputs } = execApprovalMsg;
-          logger.debug(`[gemini] Exec approval request received: ${callId}`);
+          api.logger.debug(`[gemini] Exec approval request received: ${callId}`);
           messageBuffer.addMessage(`Exec approval requested: ${callId}`, "tool");
           session.sendAgentMessage("gemini", {
             type: "tool-call",
@@ -2407,17 +2409,17 @@ Guide: https://goo.gle/gemini-cli-auth-docs#workspace-gca`;
             // Similar to Codex's CodexBash
             callId,
             input: inputs,
-            id: randomUUID()
+            id: node_crypto.randomUUID()
           });
           break;
         case "patch-apply-begin":
           const patchBeginMsg = msg;
-          const patchCallId = patchBeginMsg.call_id || patchBeginMsg.callId || randomUUID();
+          const patchCallId = patchBeginMsg.call_id || patchBeginMsg.callId || node_crypto.randomUUID();
           const { call_id: patchCallIdVar, type: patchType, auto_approved, changes } = patchBeginMsg;
           const changeCount = changes ? Object.keys(changes).length : 0;
           const filesMsg = changeCount === 1 ? "1 file" : `${changeCount} files`;
           messageBuffer.addMessage(`Modifying ${filesMsg}...`, "tool");
-          logger.debug(`[gemini] Patch apply begin: ${patchCallId}, files: ${changeCount}`);
+          api.logger.debug(`[gemini] Patch apply begin: ${patchCallId}, files: ${changeCount}`);
           session.sendAgentMessage("gemini", {
             type: "tool-call",
             name: "GeminiPatch",
@@ -2427,12 +2429,12 @@ Guide: https://goo.gle/gemini-cli-auth-docs#workspace-gca`;
               auto_approved,
               changes
             },
-            id: randomUUID()
+            id: node_crypto.randomUUID()
           });
           break;
         case "patch-apply-end":
           const patchEndMsg = msg;
-          const patchEndCallId = patchEndMsg.call_id || patchEndMsg.callId || randomUUID();
+          const patchEndCallId = patchEndMsg.call_id || patchEndMsg.callId || node_crypto.randomUUID();
           const { call_id: patchEndCallIdVar, type: patchEndType, stdout, stderr, success } = patchEndMsg;
           if (success) {
             const message = stdout || "Files modified successfully";
@@ -2441,7 +2443,7 @@ Guide: https://goo.gle/gemini-cli-auth-docs#workspace-gca`;
             const errorMsg = stderr || "Failed to modify files";
             messageBuffer.addMessage(`Error: ${errorMsg.substring(0, 200)}`, "result");
           }
-          logger.debug(`[gemini] Patch apply end: ${patchEndCallId}, success: ${success}`);
+          api.logger.debug(`[gemini] Patch apply end: ${patchEndCallId}, success: ${success}`);
           session.sendAgentMessage("gemini", {
             type: "tool-result",
             callId: patchEndCallId,
@@ -2450,7 +2452,7 @@ Guide: https://goo.gle/gemini-cli-auth-docs#workspace-gca`;
               stderr,
               success
             },
-            id: randomUUID()
+            id: node_crypto.randomUUID()
           });
           break;
         case "event":
@@ -2459,7 +2461,7 @@ Guide: https://goo.gle/gemini-cli-auth-docs#workspace-gca`;
             const thinkingText = thinkingPayload && typeof thinkingPayload === "object" && "text" in thinkingPayload ? String(thinkingPayload.text || "") : "";
             if (thinkingText) {
               reasoningProcessor.processChunk(thinkingText);
-              logger.debug(`[gemini] \u{1F4AD} Thinking chunk received: ${thinkingText.length} chars - Preview: ${thinkingText.substring(0, 100)}...`);
+              api.logger.debug(`[gemini] \u{1F4AD} Thinking chunk received: ${thinkingText.length} chars - Preview: ${thinkingText.substring(0, 100)}...`);
               if (!thinkingText.startsWith("**")) {
                 const thinkingPreview = thinkingText.substring(0, 100);
                 messageBuffer.updateLastMessage(`[Thinking] ${thinkingPreview}...`, "system");
@@ -2482,18 +2484,18 @@ Guide: https://goo.gle/gemini-cli-auth-docs#workspace-gca`;
       let message = pending;
       pending = null;
       if (!message) {
-        logger.debug("[gemini] Main loop: waiting for messages from queue...");
+        api.logger.debug("[gemini] Main loop: waiting for messages from queue...");
         const waitSignal = abortController.signal;
         const batch = await messageQueue.waitForMessagesAndGetAsString(waitSignal);
         if (!batch) {
           if (waitSignal.aborted && !shouldExit) {
-            logger.debug("[gemini] Main loop: wait aborted, continuing...");
+            api.logger.debug("[gemini] Main loop: wait aborted, continuing...");
             continue;
           }
-          logger.debug("[gemini] Main loop: no batch received, breaking...");
+          api.logger.debug("[gemini] Main loop: no batch received, breaking...");
           break;
         }
-        logger.debug(`[gemini] Main loop: received message from queue (length: ${batch.message.length})`);
+        api.logger.debug(`[gemini] Main loop: received message from queue (length: ${batch.message.length})`);
         message = batch;
       }
       if (!message) {
@@ -2501,12 +2503,12 @@ Guide: https://goo.gle/gemini-cli-auth-docs#workspace-gca`;
       }
       let injectHistoryContext = false;
       if (wasSessionCreated && currentModeHash && message.hash !== currentModeHash) {
-        logger.debug("[Gemini] Mode changed \u2013 restarting Gemini session");
+        api.logger.debug("[Gemini] Mode changed \u2013 restarting Gemini session");
         messageBuffer.addMessage("\u2550".repeat(40), "status");
         if (conversationHistory.hasHistory()) {
           messageBuffer.addMessage(`Switching model (preserving ${conversationHistory.size()} messages of context)...`, "status");
           injectHistoryContext = true;
-          logger.debug(`[Gemini] Will inject conversation history: ${conversationHistory.getSummary()}`);
+          api.logger.debug(`[Gemini] Will inject conversation history: ${conversationHistory.getSummary()}`);
         } else {
           messageBuffer.addMessage("Starting new Gemini session (mode changed)...", "status");
         }
@@ -2530,13 +2532,13 @@ Guide: https://goo.gle/gemini-cli-auth-docs#workspace-gca`;
         geminiBackend = backendResult.backend;
         setupGeminiMessageHandler(geminiBackend);
         const actualModel = backendResult.model;
-        logger.debug(`[gemini] Model change - modelToUse=${modelToUse}, actualModel=${actualModel} (from ${backendResult.modelSource})`);
+        api.logger.debug(`[gemini] Model change - modelToUse=${modelToUse}, actualModel=${actualModel} (from ${backendResult.modelSource})`);
         conversationHistory.setCurrentModel(actualModel);
-        logger.debug("[gemini] Starting new ACP session with model:", actualModel);
+        api.logger.debug("[gemini] Starting new ACP session with model:", actualModel);
         const { sessionId } = await geminiBackend.startSession();
         acpSessionId = sessionId;
-        logger.debug(`[gemini] New ACP session started: ${acpSessionId}`);
-        logger.debug(`[gemini] Calling updateDisplayedModel with: ${actualModel}`);
+        api.logger.debug(`[gemini] New ACP session started: ${acpSessionId}`);
+        api.logger.debug(`[gemini] Calling updateDisplayedModel with: ${actualModel}`);
         updateDisplayedModel(actualModel, false);
         updatePermissionMode(message.mode.permissionMode);
         wasSessionCreated = true;
@@ -2564,20 +2566,20 @@ Guide: https://goo.gle/gemini-cli-auth-docs#workspace-gca`;
             geminiBackend = backendResult.backend;
             setupGeminiMessageHandler(geminiBackend);
             const actualModel = backendResult.model;
-            logger.debug(`[gemini] Backend created, model will be: ${actualModel} (from ${backendResult.modelSource})`);
-            logger.debug(`[gemini] Calling updateDisplayedModel with: ${actualModel}`);
+            api.logger.debug(`[gemini] Backend created, model will be: ${actualModel} (from ${backendResult.modelSource})`);
+            api.logger.debug(`[gemini] Calling updateDisplayedModel with: ${actualModel}`);
             updateDisplayedModel(actualModel, false);
             conversationHistory.setCurrentModel(actualModel);
           }
           if (!acpSessionId) {
-            logger.debug("[gemini] Starting ACP session...");
+            api.logger.debug("[gemini] Starting ACP session...");
             updatePermissionMode(message.mode.permissionMode);
             const { sessionId } = await geminiBackend.startSession();
             acpSessionId = sessionId;
-            logger.debug(`[gemini] ACP session started: ${acpSessionId}`);
+            api.logger.debug(`[gemini] ACP session started: ${acpSessionId}`);
             wasSessionCreated = true;
             currentModeHash = message.hash;
-            logger.debug(`[gemini] Displaying model in UI: ${displayedModel || "gemini-2.5-pro"}, displayedModel: ${displayedModel}`);
+            api.logger.debug(`[gemini] Displaying model in UI: ${displayedModel || "gemini-2.5-pro"}, displayedModel: ${displayedModel}`);
           }
         }
         if (!acpSessionId) {
@@ -2596,20 +2598,20 @@ Guide: https://goo.gle/gemini-cli-auth-docs#workspace-gca`;
         if (injectHistoryContext && conversationHistory.hasHistory()) {
           const historyContext = conversationHistory.getContextForNewSession();
           promptToSend = historyContext + promptToSend;
-          logger.debug(`[gemini] Injected conversation history context (${historyContext.length} chars)`);
+          api.logger.debug(`[gemini] Injected conversation history context (${historyContext.length} chars)`);
         }
-        logger.debug(`[gemini] Sending prompt to Gemini (length: ${promptToSend.length}): ${promptToSend.substring(0, 100)}...`);
-        logger.debug(`[gemini] Full prompt: ${promptToSend}`);
+        api.logger.debug(`[gemini] Sending prompt to Gemini (length: ${promptToSend.length}): ${promptToSend.substring(0, 100)}...`);
+        api.logger.debug(`[gemini] Full prompt: ${promptToSend}`);
         const MAX_RETRIES = 3;
         const RETRY_DELAY_MS = 2e3;
         let lastError = null;
         for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
           try {
             await geminiBackend.sendPrompt(acpSessionId, promptToSend);
-            logger.debug("[gemini] Prompt sent successfully");
+            api.logger.debug("[gemini] Prompt sent successfully");
             if (geminiBackend.waitForResponseComplete) {
               await geminiBackend.waitForResponseComplete(12e4);
-              logger.debug("[gemini] Response complete");
+              api.logger.debug("[gemini] Response complete");
             }
             break;
           } catch (promptError) {
@@ -2634,7 +2636,7 @@ Guide: https://goo.gle/gemini-cli-auth-docs#workspace-gca`;
             const isInternalError = errorCode === -32603;
             const isRetryable = isEmptyResponseError || isInternalError;
             if (isRetryable && attempt < MAX_RETRIES) {
-              logger.debug(`[gemini] Retryable error on attempt ${attempt}/${MAX_RETRIES}: ${errorDetails}`);
+              api.logger.debug(`[gemini] Retryable error on attempt ${attempt}/${MAX_RETRIES}: ${errorDetails}`);
               messageBuffer.addMessage(`Gemini returned empty response, retrying (${attempt}/${MAX_RETRIES})...`, "status");
               await new Promise((resolve2) => setTimeout(resolve2, RETRY_DELAY_MS * attempt));
               continue;
@@ -2643,13 +2645,13 @@ Guide: https://goo.gle/gemini-cli-auth-docs#workspace-gca`;
           }
         }
         if (lastError && MAX_RETRIES > 1) {
-          logger.debug("[gemini] Prompt succeeded after retries");
+          api.logger.debug("[gemini] Prompt succeeded after retries");
         }
         if (first) {
           first = false;
         }
       } catch (error) {
-        logger.debug("[gemini] Error in gemini session:", error);
+        api.logger.debug("[gemini] Error in gemini session:", error);
         const isAbortError = error instanceof Error && error.name === "AbortError";
         if (isAbortError) {
           messageBuffer.addMessage("Aborted by user", "status");
@@ -2707,24 +2709,24 @@ Guide: https://goo.gle/gemini-cli-auth-docs#workspace-gca`;
           if (options.length > 0) {
             const optionsXml = formatOptionsXml(options);
             finalMessageText = messageText + optionsXml;
-            logger.debug(`[gemini] Found ${options.length} options in response:`, options);
+            api.logger.debug(`[gemini] Found ${options.length} options in response:`, options);
           } else if (hasIncompleteOptions(accumulatedResponse)) {
-            logger.debug(`[gemini] Warning: Incomplete options block detected`);
+            api.logger.debug(`[gemini] Warning: Incomplete options block detected`);
           }
           const messagePayload = {
             type: "message",
             message: finalMessageText,
-            id: randomUUID(),
+            id: node_crypto.randomUUID(),
             ...options.length > 0 && { options }
           };
-          logger.debug(`[gemini] Sending complete message to mobile (length: ${finalMessageText.length}): ${finalMessageText.substring(0, 100)}...`);
+          api.logger.debug(`[gemini] Sending complete message to mobile (length: ${finalMessageText.length}): ${finalMessageText.substring(0, 100)}...`);
           session.sendAgentMessage("gemini", messagePayload);
           accumulatedResponse = "";
           isResponseInProgress = false;
         }
         session.sendAgentMessage("gemini", {
           type: "task_complete",
-          id: randomUUID()
+          id: node_crypto.randomUUID()
         });
         hadToolCallInTurn = false;
         pendingChangeTitle = false;
@@ -2735,13 +2737,13 @@ Guide: https://goo.gle/gemini-cli-auth-docs#workspace-gca`;
         emitReadyIfIdle();
         isProcessingMessage = false;
         applyPendingSessionSwap();
-        logger.debug(`[gemini] Main loop: turn completed, continuing to next iteration (queue size: ${messageQueue.size()})`);
+        api.logger.debug(`[gemini] Main loop: turn completed, continuing to next iteration (queue size: ${messageQueue.size()})`);
       }
     }
   } finally {
-    logger.debug("[gemini]: Final cleanup start");
+    api.logger.debug("[gemini]: Final cleanup start");
     if (reconnectionHandle) {
-      logger.debug("[gemini]: Cancelling offline reconnection");
+      api.logger.debug("[gemini]: Cancelling offline reconnection");
       reconnectionHandle.cancel();
     }
     try {
@@ -2749,7 +2751,7 @@ Guide: https://goo.gle/gemini-cli-auth-docs#workspace-gca`;
       await session.flush();
       await session.close();
     } catch (e) {
-      logger.debug("[gemini]: Error while closing session", e);
+      api.logger.debug("[gemini]: Error while closing session", e);
     }
     if (geminiBackend) {
       await geminiBackend.dispose();
@@ -2772,8 +2774,8 @@ Guide: https://goo.gle/gemini-cli-auth-docs#workspace-gca`;
       inkInstance.unmount();
     }
     messageBuffer.clear();
-    logger.debug("[gemini]: Final cleanup completed");
+    api.logger.debug("[gemini]: Final cleanup completed");
   }
 }
 
-export { runGemini };
+exports.runGemini = runGemini;
